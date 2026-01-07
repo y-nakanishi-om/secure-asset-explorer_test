@@ -1,0 +1,28 @@
+--- Secure Asset Explorer ---
+
+バックアップデータの除外（最重要）
+
+エクスポートされた実データが含まれるJSONファイルをGitの管理から外します
+
+*.json
+
+--- OS generated files ---
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+--- Editor / IDE ---
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+--- Local Environment ---
+
+もしローカルでテスト用のツールなどを使っている場合はここに追加してください
