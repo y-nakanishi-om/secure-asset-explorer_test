@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Secure Asset Explorer - Final Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #020617; }
+        .pdf-canvas-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 60px 0; width: 100%; background-color: #020617; }
+        .pdf-page-canvas { display: block; max-width: 90%; height: auto !important; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); background-color: white; border-radius: 12px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; border: 2px solid #020617; }
+        .loader { border: 4px solid rgba(99, 102, 241, 0.1); border-top: 4px solid #6366f1; border-radius: 50%; width: 50px; height: 50px; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .asset-card { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none; }
+        .asset-card:hover { transform: translateY(-8px); filter: brightness(1.1); }
+        .glass-header { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
+        #mediaContainer { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #mediaContainer img { max-width: 90%; max-height: 85vh; object-fit: contain; display: block; margin: 6vh auto; border-radius: 16px; box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
+        body.drag-active::after { content: "資産をドロップして暗号化"; position: fixed; inset: 0; z-index: 300; background: rgba(79, 70, 229, 0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem; color: white; border: 8px dashed rgba(255,255,255,0.4); margin: 24px; border-radius: 40px; pointer-events: none; }
+        
+        /* ナビゲーションボタンのスタイル強化 */
+        .nav-btn {
+            background: rgba(30, 41, 59, 0.3);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            color: white;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
+
+    <!-- 認証レイヤー -->
+    <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex items-center justify-center p-6">
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 p-10 rounded-[3.5rem] shadow-2xl text-center">
+            <div class="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-600/30">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <h2 class="text-3xl font-black mb-3 italic tracking-tighter uppercase text-white">Vault Pro</h2>
+            <p class="text-slate-500 text-[10px] mb-8 leading-relaxed uppercase tracking-[0.15em]">PBKDF2-100K / AES-256 / RAND-IV</p>
+            <input type="password" id="masterPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-5 text-center text-white text-xl focus:border-indigo-500 outline-none transition-all mb-6 shadow-inner" placeholder="••••••••" autocomplete="current-password">
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 uppercase italic tracking-widest">Access Database</button>
+            <div class="mt-8 pt-6 border-t border-slate-800/50">
+                <p class="text-[9px] text-slate-600 uppercase tracking-widest leading-loose">PUBLIC GIT WARNING: <br> NEVER COMMIT YOUR EXPORTED JSON FILES.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div id="mainContent" class="hidden opacity-0 transition-all duration-1000">
+        <header class="glass-header border-b border-slate-800 sticky top-0 z-40">
+            <div class="max-w-[2560px] mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center rotate-2"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div>
+                        <h1 class="text-xl font-black text-white tracking-tighter uppercase italic hidden lg:block leading-none">Secure Explorer</h1>
+                    </div>
+                    <div class="flex items-center gap-2 border-l border-slate-800 pl-6">
+                        <button onclick="toggleUploadModal()" class="bg-indigo-600 hover:bg-indigo-50 text-white text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95">追加</button>
+                        <button onclick="exportFullBackup()" id="exportBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700">エクスポート</button>
+                        <button onclick="document.getElementById('importInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700">復元インポート</button>
+                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div id="fileCount" class="text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full uppercase tracking-widest leading-none hidden sm:block">0 Assets Secured</div>
+                    <button onclick="lockVault()" class="text-slate-500 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+        <main class="max-w-[2560px] mx-auto px-6 py-10">
+            <!-- 一覧表示のグリッド設定：スマホで1列〜最大で6列になるよう調整し、カードを大きく表示 -->
+            <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
+        </main>
+    </div>
+
+    <!-- 削除確認モーダル -->
+    <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
+            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">Delete?</h3>
+            <p class="text-slate-400 text-sm mb-10 leading-relaxed">この資産を完全に削除します。<br>復元はできません。</p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
+                <button id="confirmDeleteBtn" class="flex-1 bg-red-600 text-white font-bold py-4 rounded-2xl hover:bg-red-500 transition-all shadow-xl">削除実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ライトボックス -->
+    <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
+        <button id="closeBtn" class="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[80] bg-slate-900/80 p-5 rounded-full border border-white/5 active:scale-90 shadow-2xl"><svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+        
+        <!-- ナビゲーションボタン：ホバーしてない時も見えるように透明度と背景を調整 -->
+        <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 -translate-y-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
+        
+        <div id="mediaContainer"><div id="mediaLoader" class="absolute inset-0 flex items-center justify-center z-[75] bg-black/90"><div class="loader"></div></div></div>
+    </div>
+
+    <!-- アップロードモーダル -->
+    <div id="uploadModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center modal-bg p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[4rem] p-12 shadow-2xl relative">
+            <button onclick="toggleUploadModal()" class="absolute top-10 right-10 text-slate-500 hover:text-white transition-colors p-2"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <div id="dropZone" class="border-2 border-dashed border-slate-700 bg-slate-950/50 rounded-[3rem] p-16 flex flex-col items-center justify-center group cursor-pointer hover:border-indigo-500/50 transition-all">
+                <div class="w-24 h-24 bg-slate-800 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-all shadow-xl"><svg class="w-12 h-12 text-slate-500 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 4.5v15m7.5-7.5h-15"></path></svg></div>
+                <h2 class="text-3xl font-black text-white mb-2 uppercase italic tracking-tighter">Secure Storage</h2>
+                <p class="text-slate-500 text-sm">JPG, PNG, PDFを暗号化して金庫に保管</p>
+                <input type="file" id="fileInput" class="hidden" multiple accept="image/*,application/pdf">
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">Message</div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+        const CMAP_PACKED = true;
+
+        const DB_NAME = "AssetStorage_Final_v4";
+        const STORE_NAME = "assets";
+        const CONFIG_STORE = "config";
+        let db, library = [], currentIdx = -1, sessionKey = null, deleteTargetId = null, currentPDF = null;
+
+        const generateId = () => (typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+        const initDB = () => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = e => {
+                const database = e.target.result;
+                database.createObjectStore(STORE_NAME, { keyPath: "id" });
+                database.createObjectStore(CONFIG_STORE, { keyPath: "key" });
+            };
+            request.onsuccess = e => { db = e.target.result; };
+        };
+        initDB();
+
+        async function deriveKey(password, salt) {
+            return CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 100000 });
+        }
+
+        async function authenticate() {
+            if (!db) { showToast("準備中..."); return; }
+            const passEl = document.getElementById('masterPassword');
+            const pass = passEl.value;
+            if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
+
+            const tx = db.transaction(CONFIG_STORE, "readwrite");
+            const configStore = tx.objectStore(CONFIG_STORE);
+            let saltObj = await new Promise(r => { const req = configStore.get("system_salt"); req.onsuccess = () => r(req.result); });
+            let challengeObj = await new Promise(r => { const req = configStore.get("auth_challenge"); req.onsuccess = () => r(req.result); });
+
+            if (!saltObj) {
+                const newSalt = CryptoJS.lib.WordArray.random(128/8).toString();
+                saltObj = { key: "system_salt", value: newSalt };
+                configStore.put(saltObj);
+            }
+
+            showToast("鍵を生成しています...");
+            const derived = await deriveKey(pass, saltObj.value);
+            
+            if (challengeObj) {
+                const testDecrypt = CryptoJS.AES.decrypt(challengeObj.value, derived, { iv: CryptoJS.enc.Hex.parse(challengeObj.iv) });
+                try {
+                    if (testDecrypt.toString(CryptoJS.enc.Utf8) !== "OK") { 
+                        showToast("パスワードが正しくありません"); 
+                        passEl.value = "";
+                        return; 
+                    }
+                } catch(e) { showToast("パスワードエラー"); return; }
+            } else {
+                const iv = CryptoJS.lib.WordArray.random(128/8);
+                const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
+                configStore.put({ key: "auth_challenge", value: encryptedChallenge, iv: iv.toString() });
+            }
+
+            sessionKey = derived;
+            passEl.value = "";
+            document.getElementById('authOverlay').style.display = 'none';
+            const main = document.getElementById('mainContent');
+            main.classList.remove('hidden', 'opacity-0');
+            setTimeout(() => main.classList.add('opacity-100'), 50);
+            await loadFromDB();
+            showToast("ボルトを解凍しました");
+        }
+
+        async function loadFromDB() {
+            if (!db || !sessionKey) return;
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const data = await new Promise(r => { const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
+            library = data.sort((a, b) => b.timestamp - a.timestamp);
+            renderGrid();
+        }
+
+        function encrypt(text) {
+            if (!text) return "";
+            const iv = CryptoJS.lib.WordArray.random(128/8);
+            const encrypted = CryptoJS.AES.encrypt(text, sessionKey, { iv: iv });
+            return iv.toString() + ":" + encrypted.toString();
+        }
+
+        function decrypt(cipherWithIv) {
+            if (!cipherWithIv || !sessionKey) return null;
+            try {
+                const parts = cipherWithIv.split(":");
+                const iv = CryptoJS.enc.Hex.parse(parts[0]);
+                const cipherText = parts[1];
+                const bytes = CryptoJS.AES.decrypt(cipherText, sessionKey, { iv: iv });
+                return bytes.toString(CryptoJS.enc.Utf8) || null;
+            } catch(e) { return null; }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('fileGrid');
+            grid.innerHTML = '';
+            document.getElementById('fileCount').textContent = `${library.length} Assets Secured`;
+            if (library.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">Empty Safe</p></div>`;
+                return;
+            }
+            library.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "asset-card group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl cursor-pointer relative";
+                const name = decrypt(item.name) || "Encrypted Data";
+                const thumb = decrypt(item.thumbnail);
+                card.innerHTML = `
+                    <button class="del-btn absolute top-4 left-4 bg-slate-950/90 text-white/40 p-3 rounded-2xl shadow-xl z-20 border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    <div class="aspect-[4/5] w-full bg-slate-800 overflow-hidden relative">
+                        <img src="${thumb || ''}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                    </div>
+                    <div class="p-4 border-t border-slate-800/50 text-center"><p class="text-[10px] font-black text-slate-100 truncate tracking-tight uppercase">${name}</p></div>
+                `;
+                card.onclick = (e) => { if(!e.target.closest('button')) openLightbox(index); };
+                card.querySelector('.del-btn').onclick = (e) => { e.stopPropagation(); deleteTargetId = item.id; document.getElementById('confirmModal').classList.remove('hidden'); };
+                grid.appendChild(card);
+            });
+        }
+
+        async function handleFiles(fileList) {
+            if (!sessionKey) return;
+            showToast("暗号化プロセスを開始...");
+            for (const file of Array.from(fileList)) {
+                const type = file.type.startsWith('image/') ? 'image' : (file.type === 'application/pdf' ? 'pdf' : null);
+                if (!type) continue;
+                let thumbData = "";
+                try {
+                    if (type === 'pdf') {
+                        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), cMapUrl: CMAP_URL, cMapPacked: CMAP_PACKED }).promise;
+                        const page = await pdf.getPage(1);
+                        const canvas = document.createElement('canvas');
+                        const vp = page.getViewport({ scale: 0.3 });
+                        canvas.height = vp.height; canvas.width = vp.width;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                        thumbData = canvas.toDataURL('image/jpeg', 0.6);
+                        await pdf.destroy();
+                    } else {
+                        thumbData = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
+                    }
+                    const base64 = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
+                    const secureItem = { id: generateId(), name: encrypt(file.name), type: encrypt(type), size: encrypt((file.size/1024/1024).toFixed(2) + " MB"), thumbnail: encrypt(thumbData), data: encrypt(base64), timestamp: Date.now() };
+                    const tx = db.transaction(STORE_NAME, "readwrite");
+                    tx.objectStore(STORE_NAME).put(secureItem);
+                    await new Promise(r => tx.oncomplete = r);
+                } catch (err) { showToast("処理エラーが発生しました"); }
+            }
+            showToast("すべて保管されました");
+            if (!document.getElementById('uploadModal').classList.contains('hidden')) toggleUploadModal();
+            loadFromDB();
+        }
+
+        async function openLightbox(index) {
+            if (index < 0 || index >= library.length) return;
+            currentIdx = index;
+            const item = library[index], container = document.getElementById('mediaContainer'), loader = document.getElementById('mediaLoader'), lb = document.getElementById('lightbox');
+            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
+            loader.style.display = 'flex';
+            container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
+            container.scrollTop = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            const decryptedData = decrypt(item.data), type = decrypt(item.type);
+            if (!decryptedData) { showToast("復号に失敗しました"); loader.style.display = 'none'; return; }
+            if (type === 'image') {
+                const img = new Image(); img.src = decryptedData; img.onload = () => loader.style.display = 'none'; container.appendChild(img);
+            } else {
+                try {
+                    const bin = atob(decryptedData.split(',')[1]);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    currentPDF = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: CMAP_PACKED }).promise;
+                    const wrapper = document.createElement('div'); wrapper.className = 'pdf-canvas-container';
+                    container.appendChild(wrapper);
+                    const dpr = window.devicePixelRatio || 1;
+                    for (let i = 1; i <= currentPDF.numPages; i++) {
+                        const page = await currentPDF.getPage(i);
+                        const ovp = page.getViewport({ scale: 1 });
+                        const scale = Math.max((container.clientWidth * 0.9) / ovp.width, 1);
+                        const vp = page.getViewport({ scale: scale * dpr });
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'pdf-page-canvas';
+                        canvas.height = vp.height; canvas.width = vp.width;
+                        canvas.style.width = (vp.width / dpr) + "px"; canvas.style.height = (vp.height / dpr) + "px";
+                        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
+                        wrapper.appendChild(canvas);
+                        if (i === 1) loader.style.display = 'none';
+                    }
+                } catch (e) { loader.style.display = 'none'; showToast("レンダリング失敗"); }
+            }
+        }
+
+        async function lockVault() {
+            sessionKey = null; library = []; currentIdx = -1;
+            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
+            const main = document.getElementById('mainContent');
+            main.classList.add('opacity-0');
+            setTimeout(() => {
+                main.classList.add('hidden');
+                document.getElementById('authOverlay').style.display = 'flex';
+                document.getElementById('fileGrid').innerHTML = '';
+                showToast("Vault Locked");
+            }, 1000);
+        }
+
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); deleteTargetId = null; }
+        document.getElementById('confirmDeleteBtn').onclick = () => {
+            if (!deleteTargetId) return;
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME).delete(deleteTargetId);
+            tx.oncomplete = () => { closeConfirm(); loadFromDB(); showToast("データを破棄しました"); };
+        };
+
+        async function exportFullBackup() {
+            const btn = document.getElementById('exportBtn'); btn.textContent = "Packing...";
+            try {
+                const tx = db.transaction(CONFIG_STORE, "readonly");
+                const saltObj = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get("system_salt"); req.onsuccess = () => r(req.result); });
+                const challengeObj = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get("auth_challenge"); req.onsuccess = () => r(req.result); });
+                const backupData = { version: "Final", salt: saltObj?.value, challenge: challengeObj, assets: library };
+                const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `vault-secure-export-${new Date().toISOString().split('T')[0]}.json`; a.click();
+                showToast("全データをバックアップしました");
+            } catch (e) { showToast("失敗"); }
+            finally { btn.textContent = "エクスポート"; }
+        }
+
+        async function importFullBackup(input) {
+            const file = input.files[0]; if (!file) return;
+            const rd = new FileReader();
+            rd.onload = async e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const txConfig = db.transaction(CONFIG_STORE, "readwrite");
+                    if (data.salt) txConfig.objectStore(CONFIG_STORE).put({ key: "system_salt", value: data.salt });
+                    if (data.challenge) txConfig.objectStore(CONFIG_STORE).put({ key: "auth_challenge", value: data.challenge.value, iv: data.challenge.iv });
+                    await new Promise(r => txConfig.oncomplete = r);
+                    const txAssets = db.transaction(STORE_NAME, "readwrite");
+                    const assetStore = txAssets.objectStore(STORE_NAME);
+                    assetStore.clear();
+                    const assets = data.assets || data;
+                    for (const item of assets) { assetStore.put(item); }
+                    txAssets.oncomplete = () => { showToast("データベースを完全復元しました"); setTimeout(() => location.reload(), 1200); };
+                } catch (err) { showToast("不正な形式です"); }
+            };
+            rd.readAsText(file);
+        }
+
+        function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('opacity-0', 'translate-y-28'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-28'), 3000); }
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = e => handleFiles(e.target.files);
+        window.addEventListener('dragenter', e => { e.preventDefault(); if(sessionKey) document.body.classList.add('drag-active'); });
+        window.addEventListener('dragover', e => e.preventDefault());
+        window.addEventListener('dragleave', e => { if (e.relatedTarget === null) document.body.classList.remove('drag-active'); });
+        window.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag-active'); if (sessionKey) handleFiles(e.dataTransfer.files); });
+        document.getElementById('closeBtn').onclick = async () => { 
+            document.getElementById('lightbox').classList.add('hidden'); document.body.style.overflow = ''; 
+            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
+        };
+        document.getElementById('nextBtn').onclick = (e) => { e.stopPropagation(); openLightbox((currentIdx + 1) % library.length); };
+        document.getElementById('prevBtn').onclick = (e) => { e.stopPropagation(); openLightbox((currentIdx - 1 + library.length) % library.length); };
+        window.addEventListener('keydown', e => {
+            if (document.getElementById('lightbox').classList.contains('hidden')) return;
+            if (e.key === 'Escape') document.getElementById('closeBtn').click();
+            if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+            if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+        });
+    </script>
+</body>
+</html>
