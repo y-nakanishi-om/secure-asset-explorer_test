@@ -41,43 +41,49 @@
         .asset-card:hover { transform: translateY(-8px); filter: brightness(1.1); }
         .asset-card.selected { outline: 4px solid #6366f1; outline-offset: 2px; }
         
-        .glass-header { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* ヘッダーを画面下部へ移動 */
+        .glass-header { 
+            background: rgba(2, 6, 23, 0.9); 
+            backdrop-filter: blur(24px); 
+            -webkit-backdrop-filter: blur(24px); 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
         
-        /* 【重要】ライトボックス内メディアコンテナの設定修正 */
+        /* ライトボックス内メディアコンテナの設定 */
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
             overflow: auto; 
             display: flex;
-            align-items: flex-start; /* 左上を起点にする */
+            align-items: flex-start;
             justify-content: flex-start;
+            padding-bottom: 120px; /* 下部ボタン用の余白 */
         }
         
-        /* ズーム用ラッパー: margin autoで中央に寄せつつ、はみ出した際はスクロールを有効に */
+        /* ズーム用ラッパー */
         #zoomWrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-width: 100%;
             min-height: 100%;
-            margin: auto; /* コンテンツが小さい時は中央配置、大きい時はスクロール可能にする */
+            margin: auto;
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center center;
-            padding: 60px;
-            box-sizing: border-box;
+            transform-origin: top center;
+            padding: 40px;
         }
 
         #zoomWrapper > img,
         #zoomWrapper > .pdf-canvas-container {
-            /* 子要素もマージンを自動にして配置を安定させる */
             margin: auto;
         }
 
         #mediaContainer img { 
             max-width: 90%; 
-            max-height: 90vh; 
+            max-height: 85vh; 
             object-fit: contain; 
             display: block; 
             border-radius: 16px; 
@@ -100,8 +106,9 @@
             transform: translateY(-50%) scale(1.1); 
         }
 
-        .hide-header header { transform: translateY(-100%); pointer-events: none; }
-        .hide-header main { padding-top: 0; }
+        /* 拡大表示モード（下部ヘッダー隠し） */
+        .hide-header header { transform: translateY(100%); pointer-events: none; }
+        .hide-header main { padding-bottom: 0; }
         #exitFocusBtn { display: none; }
         .hide-header #exitFocusBtn { display: flex; }
 
@@ -119,32 +126,46 @@
         }
         .custom-select:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(99, 102, 241, 0.4); }
 
-        .zoom-controls {
+        /* 拡大画面用：下部コントロールバー */
+        .lightbox-controls {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 100;
             display: flex;
-            gap: 0.5rem;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            padding: 0.5rem;
-            border-radius: 1rem;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            padding: 0.75rem;
+            border-radius: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        .zoom-btn {
-            width: 3rem;
-            height: 3rem;
+
+        .zoom-group {
+            display: flex;
+            gap: 0.5rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding-right: 1rem;
+        }
+
+        .zoom-btn, .close-lightbox-btn {
+            width: 3.5rem;
+            height: 3.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(255, 255, 255, 0.05);
             color: white;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             transition: all 0.2s;
         }
         .zoom-btn:hover { background: rgba(99, 102, 241, 0.3); }
-        .zoom-btn:active { scale: 0.9; }
+        .close-lightbox-btn { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+        .close-lightbox-btn:hover { background: rgba(220, 38, 38, 0.4); color: white; }
+        .zoom-btn:active, .close-lightbox-btn:active { scale: 0.9; }
 
         @keyframes pulse-slow {
             0%, 100% { opacity: 1; transform: scale(1); }
@@ -155,7 +176,7 @@
 </head>
 <body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
 
-    <!-- 認証レイヤー (プロフェッショナル・ミニマル仕様) -->
+    <!-- 認証レイヤー -->
     <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-8">
         <div class="w-full max-w-lg mb-16 flex flex-col items-center animate-pulse-slow">
             <img src="logo.png" alt="Content Viewer" class="w-full max-w-[480px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(79,70,229,0.3)]" onerror="this.src='https://via.placeholder.com/600x200/020617/ffffff?text=CONTENT+VIEWER'">
@@ -181,20 +202,28 @@
     </div>
 
     <!-- メインコンテンツ -->
-    <div id="mainContent" class="hidden opacity-0 transition-all duration-700">
-        <header class="glass-header border-b border-slate-800 sticky top-0 z-40">
-            <div class="max-w-[2560px] mx-auto px-6 py-4 flex justify-between items-center">
+    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-32"> <!-- 下部ヘッダー用の余白を追加 -->
+        
+        <main class="max-w-[2560px] mx-auto px-6 py-10">
+            <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
+        </main>
+
+        <!-- メインヘッダー（画面下部に配置） -->
+        <header class="glass-header border-t border-slate-800 fixed bottom-0 left-0 right-0 z-40">
+            <div class="max-w-[2560px] mx-auto px-6 py-5 flex justify-between items-center">
                 <div class="flex items-center gap-6">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center rotate-2"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div>
+                        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center rotate-2 shadow-lg shadow-indigo-500/20">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                        </div>
                         <h1 class="text-xl font-black text-white tracking-tighter uppercase italic hidden lg:block leading-none">コンテンツビューアー</h1>
                     </div>
                     <div class="flex items-center gap-2 border-l border-slate-800 pl-6">
                         <div id="normalActions" class="flex items-center gap-2">
-                            <button onclick="toggleUploadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95">追加</button>
-                            <button onclick="toggleSelectMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700">選択</button>
-                            <button onclick="document.getElementById('importInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700">復元インポート</button>
-                            <button onclick="exportFullBackup()" id="exportBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700 hidden md:block">エクスポート</button>
+                            <button onclick="toggleUploadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-black px-5 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-500/10">追加</button>
+                            <button onclick="toggleSelectMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-3 rounded-xl transition-all active:scale-95 border border-slate-700">選択</button>
+                            <button onclick="document.getElementById('importInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-3 rounded-xl transition-all active:scale-95 border border-slate-700">復元インポート</button>
+                            <button onclick="exportFullBackup()" id="exportBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-3 rounded-xl transition-all active:scale-95 border border-slate-700 hidden md:block">エクスポート</button>
                             
                             <select id="sortSelect" onchange="renderGrid()" class="custom-select ml-2">
                                 <option value="reg_desc">登録順 (新しい順)</option>
@@ -210,9 +239,9 @@
                             <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
                         </div>
                         <div id="selectActions" class="flex gap-2 hidden">
-                            <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95">削除 (0)</button>
-                            <button onclick="toggleSelectAll()" class="bg-slate-800 text-slate-200 text-[11px] font-black px-4 py-2.5 rounded-xl transition-all border border-slate-700">全選択</button>
-                            <button onclick="toggleSelectMode()" class="bg-slate-200 text-slate-900 text-[11px] font-black px-4 py-2.5 rounded-xl transition-all">解除</button>
+                            <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="bg-red-600 hover:bg-red-500 text-white text-[11px] font-black px-5 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-red-500/10">削除 (0)</button>
+                            <button onclick="toggleSelectAll()" class="bg-slate-800 text-slate-200 text-[11px] font-black px-4 py-3 rounded-xl transition-all border border-slate-700">全選択</button>
+                            <button onclick="toggleSelectMode()" class="bg-slate-200 text-slate-900 text-[11px] font-black px-4 py-3 rounded-xl transition-all">解除</button>
                         </div>
                     </div>
                 </div>
@@ -222,55 +251,49 @@
                         <div id="storageUsage" class="text-[8px] text-slate-500 uppercase tracking-tighter">サイト全体: --MB / 空き: --GB</div>
                     </div>
 
-                    <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white transition-colors p-1" title="枠内最大化">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-
-                    <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white transition-colors p-1" title="枠を飛び出す（全画面）">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-                    </button>
-                    
-                    <button onclick="lockVault()" class="text-slate-500 hover:text-white transition-colors p-1" title="ロック">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-                    </button>
+                    <div class="flex gap-2 border-l border-slate-800 pl-4">
+                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white transition-colors p-2" title="枠内最大化">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white transition-colors p-2" title="枠を飛び出す（全画面）">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                        </button>
+                        <button onclick="lockVault()" class="text-slate-500 hover:text-white transition-colors p-2" title="ロック">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
-        <main class="max-w-[2560px] mx-auto px-6 py-10">
-            <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
-        </main>
 
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-8 right-8 z-50 bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     </div>
 
-    <!-- 各種モーダル -->
-    <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
-            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
-            <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">完全に削除します。復元はできません。</p>
-            <div class="flex gap-4">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
-                <button id="confirmDeleteBtn" class="flex-1 bg-red-600 text-white font-bold py-4 rounded-2xl hover:bg-red-500 transition-all shadow-xl">削除実行</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- 拡大画面（ライトボックス） -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
-        <div class="zoom-controls">
-            <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            </button>
-            <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg>
-            </button>
-            <button onclick="resetZoom()" class="zoom-btn" title="リセット">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg>
+        
+        <!-- ライトボックス用の統合下部コントロールバー -->
+        <div class="lightbox-controls">
+            <div class="zoom-group">
+                <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                </button>
+                <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg>
+                </button>
+                <button onclick="resetZoom()" class="zoom-btn" title="リセット">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg>
+                </button>
+            </div>
+            
+            <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる">
+                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
 
-        <button id="closeBtn" class="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[80] bg-slate-900/80 p-5 rounded-full border border-white/5 active:scale-90 shadow-2xl"><svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+        <!-- ナビゲーションボタン（左右中央） -->
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
         <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
         
@@ -281,9 +304,21 @@
         </div>
     </div>
 
+    <!-- モーダル系（削除確認、アップロード） -->
+    <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
+            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
+            <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">完全に削除します。復元はできません。</p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-5 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
+                <button id="confirmDeleteBtn" class="flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl">削除実行</button>
+            </div>
+        </div>
+    </div>
+
     <div id="uploadModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[4rem] p-12 shadow-2xl relative">
-            <button onclick="toggleUploadModal()" class="absolute top-10 right-10 text-slate-500 hover:text-white transition-colors p-2"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <button onclick="toggleUploadModal()" class="absolute bottom-10 right-10 bg-slate-800 text-slate-400 hover:text-white p-4 rounded-2xl transition-colors"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
             <div id="dropZone" class="border-2 border-dashed border-slate-700 bg-slate-950/50 rounded-[3rem] p-16 flex flex-col items-center justify-center group cursor-pointer hover:border-indigo-500/50 transition-all">
                 <div class="w-24 h-24 bg-slate-800 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-all shadow-xl"><svg class="w-12 h-12 text-slate-500 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 4.5v15m7.5-7.5h-15"></path></svg></div>
                 <h2 class="text-3xl font-black text-white mb-2 uppercase italic tracking-tighter text-center">Secure Storage</h2>
@@ -293,7 +328,7 @@
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">メッセージ</div>
+    <div id="toast" class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">メッセージ</div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -607,7 +642,6 @@
             currentZoom *= factor;
             currentZoom = Math.min(Math.max(currentZoom, 0.5), 8);
             
-            // ズーム後に中央を維持するためのスクロール位置調整
             const scrollX = mc.scrollLeft + mc.clientWidth / 2;
             const scrollY = mc.scrollTop + mc.clientHeight / 2;
             const ratio = currentZoom / prevZoom;
@@ -629,20 +663,12 @@
         function applyZoom() {
             const wrapper = document.getElementById('zoomWrapper');
             if (wrapper) {
-                // 拡大の起点を動的に変更：拡大時は左上、等倍時は中央に
-                // これにより「左側が見切れて戻れない」現象を回避
                 wrapper.style.transformOrigin = currentZoom > 1 ? 'top left' : 'center center';
                 wrapper.style.transform = `scale(${currentZoom})`;
                 
-                // コンテナの配置を拡大率に応じて調整
                 const mc = document.getElementById('mediaContainer');
-                if (currentZoom > 1) {
-                    mc.style.alignItems = 'flex-start';
-                    mc.style.justifyContent = 'flex-start';
-                } else {
-                    mc.style.alignItems = 'flex-start';
-                    mc.style.justifyContent = 'flex-start';
-                }
+                mc.style.alignItems = currentZoom > 1 ? 'flex-start' : 'flex-start';
+                mc.style.justifyContent = currentZoom > 1 ? 'flex-start' : 'flex-start';
             }
         }
 
@@ -750,12 +776,13 @@
         window.addEventListener('dragleave', e => { if (e.relatedTarget === null) document.body.classList.remove('drag-active'); });
         window.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag-active'); if (sessionKey) handleFiles(e.dataTransfer.files); });
         
-        document.getElementById('closeBtn').onclick = async () => { 
-            document.getElementById('lightbox').classList.add('hidden'); document.body.style.overflow = ''; 
+        function closeLightboxUI() {
+            document.getElementById('lightbox').classList.add('hidden'); 
+            document.body.style.overflow = ''; 
             resetZoom();
-            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
-        };
-        
+            if (currentPDF) { currentPDF.destroy(); currentPDF = null; }
+        }
+
         document.getElementById('nextBtn').onclick = (e) => { 
             e.stopPropagation(); 
             const sortedList = getSortedLibrary();
@@ -769,7 +796,7 @@
         
         window.addEventListener('keydown', e => {
             if (document.getElementById('lightbox').classList.contains('hidden')) return;
-            if (e.key === 'Escape') document.getElementById('closeBtn').click();
+            if (e.key === 'Escape') closeLightboxUI();
             if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
             if (e.key === '+' || e.key === ';') zoomContent(1.2);
