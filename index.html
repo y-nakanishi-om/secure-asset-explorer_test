@@ -23,7 +23,7 @@
         }
         .pdf-page-canvas { 
             display: block; 
-            max-width: 90%; 
+            max-width: 95%; 
             height: auto !important; 
             box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); 
             background-color: white; 
@@ -51,14 +51,16 @@
         }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
         
-        /* ライトボックス内メディアコンテナの設定: 中央揃えのエラーを防ぐためflexに変更 */
+        /* 【重要】上部見切れ防止レイアウト */
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
             overflow: auto; 
             display: flex;
-            align-items: flex-start;
-            justify-content: flex-start;
+            flex-direction: column;
+            align-items: center; /* 横方向中央 */
+            justify-content: flex-start; /* 縦方向は常に上端を基準にする（見切れ防止） */
+            padding-bottom: 140px; /* 操作バーとの重なり防止 */
         }
         
         /* ズーム用ラッパー: margin: auto により、小さい時は中央、大きい時は上端配置になる */
@@ -66,13 +68,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-width: 100%;
             min-height: 100%;
-            margin: auto; 
+            margin: auto 0; /* 縦方向は auto にすることで、中身が小さい時は中央、大きい時は上端基準になる */
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: top center; /* スクロール位置がずれないよう、起点を上に固定 */
-            padding: 60px;
+            transform-origin: top center; /* 拡大の起点を上に固定 */
+            padding: 40px 0;
             box-sizing: border-box;
             flex-shrink: 0;
         }
@@ -107,7 +109,7 @@
             transform: translateY(-50%) scale(1.1); 
         }
 
-        /* 拡大表示モード（下部ヘッダー隠し） */
+        /* 拡大表示モード */
         .hide-header header { transform: translateY(100%); pointer-events: none; }
         .hide-header main { padding-bottom: 0; }
         #exitFocusBtn { display: none; }
@@ -127,7 +129,7 @@
         }
         .custom-select:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(99, 102, 241, 0.4); }
 
-        /* 拡大画面用：下部コントロールバー */
+        /* 下部コントロールバー */
         .lightbox-controls {
             position: fixed;
             bottom: 2rem;
@@ -274,7 +276,7 @@
     <!-- 拡大画面（ライトボックス） -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
         
-        <!-- ライトボックス用の統合下部コントロールバー -->
+        <!-- 下部コントロールバー -->
         <div class="lightbox-controls">
             <div class="zoom-group">
                 <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
@@ -293,7 +295,6 @@
             </button>
         </div>
 
-        <!-- ナビゲーションボタン（左右中央） -->
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
         <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
         
@@ -662,8 +663,7 @@
         function applyZoom() {
             const wrapper = document.getElementById('zoomWrapper');
             if (wrapper) {
-                // 拡大時は中央を維持しつつサイズを広げる
-                wrapper.style.transformOrigin = 'center center';
+                wrapper.style.transformOrigin = 'top center';
                 wrapper.style.transform = `scale(${currentZoom})`;
                 wrapper.style.width = (currentZoom * 100) + '%';
                 wrapper.style.height = (currentZoom * 100) + '%';
