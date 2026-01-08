@@ -51,7 +51,7 @@
         }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
         
-        /* ライトボックス内メディアコンテナの設定 */
+        /* ライトボックス内メディアコンテナの設定修正 */
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
@@ -59,7 +59,6 @@
             display: flex;
             align-items: flex-start;
             justify-content: flex-start;
-            padding-bottom: 120px; /* 下部ボタン用の余白 */
         }
         
         /* ズーム用ラッパー */
@@ -67,13 +66,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             min-width: 100%;
             min-height: 100%;
-            margin: auto;
+            margin: auto; 
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: top center;
-            padding: 40px;
+            transform-origin: center center;
+            padding: 80px;
+            box-sizing: border-box;
+            flex-shrink: 0;
         }
 
         #zoomWrapper > img,
@@ -189,7 +190,7 @@
                 <div class="absolute inset-0 rounded-2xl bg-indigo-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
             
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-5 rounded-2xl transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] active:scale-[0.98] uppercase tracking-[0.2em] text-xs">
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-6 rounded-2xl transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
                 log in
             </button>
 
@@ -202,8 +203,7 @@
     </div>
 
     <!-- メインコンテンツ -->
-    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-32"> <!-- 下部ヘッダー用の余白を追加 -->
-        
+    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-32">
         <main class="max-w-[2560px] mx-auto px-6 py-10">
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
         </main>
@@ -273,8 +273,6 @@
 
     <!-- 拡大画面（ライトボックス） -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
-        
-        <!-- ライトボックス用の統合下部コントロールバー -->
         <div class="lightbox-controls">
             <div class="zoom-group">
                 <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
@@ -293,7 +291,6 @@
             </button>
         </div>
 
-        <!-- ナビゲーションボタン（左右中央） -->
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
         <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
         
@@ -304,7 +301,7 @@
         </div>
     </div>
 
-    <!-- モーダル系（削除確認、アップロード） -->
+    <!-- モーダル系 -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
@@ -635,7 +632,6 @@
             }
         }
 
-        // ズーム処理
         function zoomContent(factor) {
             const mc = document.getElementById('mediaContainer');
             const prevZoom = currentZoom;
@@ -663,12 +659,10 @@
         function applyZoom() {
             const wrapper = document.getElementById('zoomWrapper');
             if (wrapper) {
-                wrapper.style.transformOrigin = currentZoom > 1 ? 'top left' : 'center center';
+                wrapper.style.transformOrigin = 'center center';
                 wrapper.style.transform = `scale(${currentZoom})`;
-                
-                const mc = document.getElementById('mediaContainer');
-                mc.style.alignItems = currentZoom > 1 ? 'flex-start' : 'flex-start';
-                mc.style.justifyContent = currentZoom > 1 ? 'flex-start' : 'flex-start';
+                wrapper.style.width = (currentZoom * 100) + '%';
+                wrapper.style.height = (currentZoom * 100) + '%';
             }
         }
 
@@ -721,7 +715,7 @@
                 closeConfirm();
                 if (isSelectMode) toggleSelectMode();
                 loadFromDB();
-                showToast("削除しました");
+                showToast("破棄完了");
                 updateStorageUsage();
             };
         };
@@ -736,7 +730,7 @@
                 const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
                 a.download = `vault-secure-export-${new Date().toISOString().split('T')[0]}.json`; a.click();
-                showToast("エクスポート完了");
+                showToast("エクスポート成功");
             } catch (e) { showToast("失敗"); }
             finally { if(btn) btn.textContent = "エクスポート"; }
         }
@@ -776,11 +770,11 @@
         window.addEventListener('dragleave', e => { if (e.relatedTarget === null) document.body.classList.remove('drag-active'); });
         window.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag-active'); if (sessionKey) handleFiles(e.dataTransfer.files); });
         
-        function closeLightboxUI() {
+        async function closeLightboxUI() {
             document.getElementById('lightbox').classList.add('hidden'); 
             document.body.style.overflow = ''; 
             resetZoom();
-            if (currentPDF) { currentPDF.destroy(); currentPDF = null; }
+            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
         }
 
         document.getElementById('nextBtn').onclick = (e) => { 
@@ -799,7 +793,7 @@
             if (e.key === 'Escape') closeLightboxUI();
             if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
-            if (e.key === '+' || e.key === ';') zoomContent(1.2);
+            if (e.key === '+' || e.key === ';') zoomContent(1.25);
             if (e.key === '-' || e.key === '_') zoomContent(0.8);
             if (e.key === '0') resetZoom();
         });
