@@ -40,7 +40,6 @@
             transform: translateY(-50%) scale(1.1); 
         }
 
-        /* 拡大表示用のスタイル（枠内で最大化） */
         .hide-header header { transform: translateY(-100%); pointer-events: none; }
         .hide-header main { padding-top: 0; }
         #exitFocusBtn { display: none; }
@@ -57,7 +56,7 @@
             </div>
             <h2 class="text-3xl font-black mb-3 italic tracking-tighter uppercase text-white text-center">ページビューアー</h2>
             <input type="password" id="masterPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-5 text-center text-white text-xl focus:border-indigo-500 outline-none transition-all mb-6 shadow-inner" placeholder="••••••••" autocomplete="current-password">
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 uppercase italic tracking-widest">ログイン</button>
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 uppercase italic tracking-widest">ログイン</button>
             <div class="mt-8 pt-6 border-t border-slate-800/50 text-center">
                 <p class="text-[9px] text-slate-600 uppercase tracking-widest leading-loose">
                     PUBLIC GIT WARNING: <br> NEVER COMMIT YOUR EXPORTED JSON FILES.
@@ -96,12 +95,10 @@
                         <div id="storageUsage" class="text-[8px] text-slate-500 uppercase tracking-tighter">サイト全体: --MB / 空き: --GB</div>
                     </div>
 
-                    <!-- 拡大表示（枠内を最大化）: 常に安全に動作 -->
                     <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white transition-colors p-1" title="枠内最大化">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
 
-                    <!-- 全画面表示（枠を飛び出す）: 許可がない場合はFocusModeに誘導 -->
                     <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white transition-colors p-1" title="枠を飛び出す（全画面）">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
                     </button>
@@ -116,13 +113,11 @@
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
         </main>
 
-        <!-- 拡大解除ボタン（FocusMode時のみ表示） -->
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-8 right-8 z-50 bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     </div>
 
-    <!-- モーダル・ライトボックス類 -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
@@ -161,7 +156,7 @@
         const DB_NAME = "AssetStorage_Final_v4";
         const STORE_NAME = "assets";
         const CONFIG_STORE = "config";
-        let db, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
+        let db = null, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
         let isSelectMode = false, selectedIds = new Set();
         let currentPDF = null;
 
@@ -183,20 +178,23 @@
         }
 
         async function authenticate() {
-            if (!db) { showToast("準備中..."); return; }
+            if (!db) { showToast("データベース準備中...もう一度お試しください"); return; }
             const passEl = document.getElementById('masterPassword');
             const pass = passEl.value;
             if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
-            showToast("鍵を生成中...");
+            
+            showToast("認証中...");
             const tx = db.transaction(CONFIG_STORE, "readwrite");
             const configStore = tx.objectStore(CONFIG_STORE);
             let saltObj = await new Promise(r => { const req = configStore.get("system_salt"); req.onsuccess = () => r(req.result); });
             let challengeObj = await new Promise(r => { const req = configStore.get("auth_challenge"); req.onsuccess = () => r(req.result); });
+            
             if (!saltObj) {
                 const newSalt = CryptoJS.lib.WordArray.random(128/8).toString();
                 saltObj = { key: "system_salt", value: newSalt };
                 configStore.put(saltObj);
             }
+            
             const derived = await deriveKey(pass, saltObj.value);
             if (challengeObj) {
                 const testResult = decryptWithKey(challengeObj.value, challengeObj.iv, derived);
@@ -206,11 +204,13 @@
                 const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
                 configStore.put({ key: "auth_challenge", value: encryptedChallenge, iv: iv.toString() });
             }
+            
             sessionKey = derived;
             passEl.value = "";
             document.getElementById('authOverlay').style.display = 'none';
             const main = document.getElementById('mainContent');
             main.classList.remove('hidden', 'opacity-0');
+            
             setTimeout(async () => {
                 main.classList.add('opacity-100');
                 await loadFromDB();
@@ -221,10 +221,14 @@
 
         async function updateStorageUsage() {
             if (navigator.storage && navigator.storage.estimate) {
-                const { usage, quota } = await navigator.storage.estimate();
-                const usedMB = (usage / (1024 * 1024)).toFixed(1);
-                const availableGB = ((quota - usage) / (1024 * 1024 * 1024)).toFixed(1);
-                document.getElementById('storageUsage').textContent = `サイト全体: ${usedMB}MB / 空き: ${availableGB}GB`;
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const usage = estimate.usage || 0;
+                    const quota = estimate.quota || 0;
+                    const usedMB = (usage / (1024 * 1024)).toFixed(1);
+                    const availableGB = ((quota - usage) / (1024 * 1024 * 1024)).toFixed(1);
+                    document.getElementById('storageUsage').textContent = `サイト全体: ${usedMB}MB / 空き: ${availableGB}GB`;
+                } catch(e) {}
             }
         }
 
@@ -264,6 +268,7 @@
             const grid = document.getElementById('fileGrid');
             grid.innerHTML = '';
             document.getElementById('fileCount').textContent = `登録数: ${library.length}`;
+            
             if (library.length === 0) {
                 grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">ファイルが登録されていません。</p></div>`;
                 return;
@@ -332,7 +337,7 @@
         function deleteSelectedAssets() {
             if (selectedIds.size === 0) return;
             deleteTargetIds = Array.from(selectedIds);
-            document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件のファイルを完全に削除します。`;
+            document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件の資産を完全に削除します。`;
             document.getElementById('confirmModal').classList.remove('hidden');
         }
 
@@ -407,38 +412,27 @@
             }
         }
 
-        // 全画面表示の切り替え（エラーハンドリングと事前チェックを強化）
         function toggleFullScreen() {
-            // ブラウザ側で全画面化がそもそも許可されているかチェック
             if (!document.fullscreenEnabled) {
                 showToast("全画面表示が許可されていません（拡大表示に切り替えます）");
-                toggleFocusMode(); // 代わりにFocusModeを起動
+                toggleFocusMode();
                 return;
             }
-
             try {
                 if (!document.fullscreenElement) {
-                    const promise = document.documentElement.requestFullscreen();
-                    if (promise) {
-                        promise.catch(err => {
-                            showToast("サイネージ側の設定(allow='fullscreen')が必要です");
-                            toggleFocusMode(); // エラー時はFocusModeへ
-                        });
-                    }
+                    const p = document.documentElement.requestFullscreen();
+                    if (p) p.catch(() => toggleFocusMode());
                 } else {
                     if (document.exitFullscreen) document.exitFullscreen();
                 }
-            } catch (err) {
-                showToast("全画面表示に失敗しました");
-            }
+            } catch (err) { toggleFocusMode(); }
         }
 
-        // 拡大表示（ヘッダー非表示・枠内最大化）の切り替え
         function toggleFocusMode() {
             document.body.classList.toggle('hide-header');
             window.dispatchEvent(new Event('resize'));
             if (document.body.classList.contains('hide-header')) {
-                showToast("拡大表示中（右下の×で解除）");
+                showToast("最大表示中（右下の×で解除）");
             }
         }
 
@@ -446,7 +440,7 @@
             sessionKey = null; library = []; currentIdx = -1; selectedIds.clear(); isSelectMode = false;
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
             const main = document.getElementById('mainContent');
-            main.classList.remove('opacity-100', 'hide-header'); // ロック時はFocusModeも解除
+            main.classList.remove('opacity-100', 'hide-header');
             main.classList.add('opacity-0');
             setTimeout(() => {
                 main.classList.add('hidden');
@@ -467,13 +461,13 @@
                 closeConfirm();
                 if (isSelectMode) toggleSelectMode();
                 loadFromDB();
-                showToast("破棄完了");
+                showToast("削除しました");
                 updateStorageUsage();
             };
         };
 
         async function exportFullBackup() {
-            const btn = document.getElementById('exportBtn'); if(btn) btn.textContent = "準備中...";
+            const btn = document.getElementById('exportBtn'); if(btn) btn.textContent = "処理中...";
             try {
                 const tx = db.transaction(CONFIG_STORE, "readonly");
                 const saltObj = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get("system_salt"); req.onsuccess = () => r(req.result); });
@@ -482,7 +476,7 @@
                 const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
                 a.download = `vault-secure-export-${new Date().toISOString().split('T')[0]}.json`; a.click();
-                showToast("エクスポート成功");
+                showToast("エクスポート完了");
             } catch (e) { showToast("失敗"); }
             finally { if(btn) btn.textContent = "エクスポート"; }
         }
@@ -493,6 +487,9 @@
             rd.onload = async e => {
                 try {
                     const data = JSON.parse(e.target.result);
+                    if (!data || (!data.assets && !Array.isArray(data))) {
+                        showToast("データが空か不正な形式です"); return;
+                    }
                     const txConfig = db.transaction(CONFIG_STORE, "readwrite");
                     if (data.salt) txConfig.objectStore(CONFIG_STORE).put({ key: "system_salt", value: data.salt });
                     if (data.challenge) txConfig.objectStore(CONFIG_STORE).put({ key: "auth_challenge", value: data.challenge.value, iv: data.challenge.iv });
@@ -503,7 +500,7 @@
                     const assets = data.assets || data;
                     for (const item of assets) { assetStore.put(item); }
                     txAssets.oncomplete = () => { showToast("復元完了。再起動中..."); setTimeout(() => location.reload(), 1200); };
-                } catch (err) { showToast("不正な形式です"); }
+                } catch (err) { showToast("読み込み中にエラーが発生しました"); }
             };
             rd.readAsText(file);
         }
