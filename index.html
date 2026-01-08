@@ -51,7 +51,7 @@
         }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
         
-        /* ライトボックス内メディアコンテナの設定修正 */
+        /* ライトボックス内メディアコンテナの設定: 中央揃えのエラーを防ぐためflexに変更 */
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
@@ -61,7 +61,7 @@
             justify-content: flex-start;
         }
         
-        /* ズーム用ラッパー */
+        /* ズーム用ラッパー: margin: auto により、小さい時は中央、大きい時は上端配置になる */
         #zoomWrapper {
             display: flex;
             flex-direction: column;
@@ -71,8 +71,8 @@
             min-height: 100%;
             margin: auto; 
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center center;
-            padding: 80px;
+            transform-origin: top center; /* スクロール位置がずれないよう、起点を上に固定 */
+            padding: 60px;
             box-sizing: border-box;
             flex-shrink: 0;
         }
@@ -190,7 +190,7 @@
                 <div class="absolute inset-0 rounded-2xl bg-indigo-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
             
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-6 rounded-2xl transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-6 rounded-2xl transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
                 log in
             </button>
 
@@ -273,6 +273,8 @@
 
     <!-- 拡大画面（ライトボックス） -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
+        
+        <!-- ライトボックス用の統合下部コントロールバー -->
         <div class="lightbox-controls">
             <div class="zoom-group">
                 <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
@@ -291,6 +293,7 @@
             </button>
         </div>
 
+        <!-- ナビゲーションボタン（左右中央） -->
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
         <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
         
@@ -659,6 +662,7 @@
         function applyZoom() {
             const wrapper = document.getElementById('zoomWrapper');
             if (wrapper) {
+                // 拡大時は中央を維持しつつサイズを広げる
                 wrapper.style.transformOrigin = 'center center';
                 wrapper.style.transform = `scale(${currentZoom})`;
                 wrapper.style.width = (currentZoom * 100) + '%';
