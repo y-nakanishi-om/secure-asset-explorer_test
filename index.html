@@ -10,20 +10,60 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #020617; }
-        .pdf-canvas-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 60px 0; width: 100%; background-color: #020617; }
-        .pdf-page-canvas { display: block; max-width: 90%; height: auto !important; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); background-color: white; border-radius: 12px; }
+        
+        /* PDFコンテナの中央揃え */
+        .pdf-canvas-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 32px; 
+            padding: 40px 0; 
+            width: 100%; 
+            background-color: transparent; 
+        }
+        .pdf-page-canvas { 
+            display: block; 
+            max-width: 90%; 
+            height: auto !important; 
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); 
+            background-color: white; 
+            border-radius: 12px; 
+        }
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #020617; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; border: 2px solid #020617; }
+        
         .loader { border: 4px solid rgba(99, 102, 241, 0.1); border-top: 4px solid #6366f1; border-radius: 50%; width: 50px; height: 50px; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .asset-card { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none; min-height: 200px; position: relative; }
         .asset-card:hover { transform: translateY(-8px); filter: brightness(1.1); }
         .asset-card.selected { outline: 4px solid #6366f1; outline-offset: 2px; }
+        
         .glass-header { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
-        #mediaContainer { width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        #mediaContainer img { max-width: 90%; max-height: 85vh; object-fit: contain; display: block; margin: 6vh auto; border-radius: 16px; box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
+        
+        /* ライトボックス内メディアコンテナの中央揃え設定 */
+        #mediaContainer { 
+            width: 100%; 
+            height: 100%; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* 基本は上詰めだが、中身にmargin:autoを入れることで中央化 */
+        }
+        #mediaContainer img { 
+            max-width: 90%; 
+            max-height: 90vh; 
+            object-fit: contain; 
+            display: block; 
+            margin: auto; /* これで上下左右中央へ */
+            border-radius: 16px; 
+            box-shadow: 0 40px 80px rgba(0,0,0,0.8); 
+        }
+        
         body.drag-active::after { content: "資産をドロップして暗号化"; position: fixed; inset: 0; z-index: 300; background: rgba(79, 70, 229, 0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem; color: white; border: 8px dashed rgba(255,255,255,0.4); margin: 24px; border-radius: 40px; pointer-events: none; }
         
         .nav-btn {
@@ -68,9 +108,9 @@
             <div class="w-20 h-20 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-600/30">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             </div>
-            <h2 class="text-3xl font-black mb-3 italic tracking-tighter uppercase text-white text-center">ページビューアー</h2>
+            <h2 class="text-3xl font-black mb-3 italic tracking-tighter uppercase text-white text-center">コンテンツビューアー</h2>
             <input type="password" id="masterPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-5 text-center text-white text-xl focus:border-indigo-500 outline-none transition-all mb-6 shadow-inner" placeholder="••••••••" autocomplete="current-password">
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 uppercase italic tracking-widest">ログイン</button>
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 uppercase italic tracking-widest">ログイン</button>
             <div class="mt-8 pt-6 border-t border-slate-800/50 text-center">
                 <p class="text-[9px] text-slate-600 uppercase tracking-widest leading-loose">
                     PUBLIC GIT WARNING: <br> NEVER COMMIT YOUR EXPORTED JSON FILES.
@@ -86,7 +126,7 @@
                 <div class="flex items-center gap-6">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center rotate-2"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div>
-                        <h1 class="text-xl font-black text-white tracking-tighter uppercase italic hidden lg:block leading-none">ページビューアー</h1>
+                        <h1 class="text-xl font-black text-white tracking-tighter uppercase italic hidden lg:block leading-none">コンテンツビューアー</h1>
                     </div>
                     <div class="flex items-center gap-2 border-l border-slate-800 pl-6">
                         <div id="normalActions" class="flex items-center gap-2">
@@ -95,7 +135,6 @@
                             <button onclick="document.getElementById('importInput').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700">復元インポート</button>
                             <button onclick="exportFullBackup()" id="exportBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-black px-5 py-2.5 rounded-xl transition-all active:scale-95 border border-slate-700 hidden md:block">エクスポート</button>
                             
-                            <!-- 並び替えメニュー: 選択肢を拡張 -->
                             <select id="sortSelect" onchange="renderGrid()" class="custom-select ml-2">
                                 <option value="reg_desc">登録順 (新しい順)</option>
                                 <option value="reg_asc">登録順 (古い順)</option>
@@ -140,11 +179,13 @@
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
         </main>
 
+        <!-- 拡大解除ボタン -->
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-8 right-8 z-50 bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     </div>
 
+    <!-- モーダル・ライトボックス類 -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
@@ -205,7 +246,7 @@
         }
 
         async function authenticate() {
-            if (!db) { showToast("データベース準備中...もう一度お試しください"); return; }
+            if (!db) { showToast("データベース準備中..."); return; }
             const passEl = document.getElementById('masterPassword');
             const pass = passEl.value;
             if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
@@ -291,11 +332,9 @@
             } catch(e) { return null; }
         }
 
-        // 現在の並び替え設定に従ってリストを返す共通関数
         function getSortedLibrary() {
             const sortVal = document.getElementById('sortSelect').value;
             let sortedList = [...library];
-            
             const parseSize = (s) => parseFloat(decrypt(s)?.replace(/ MB$/, '')) || 0;
 
             if (sortVal === 'reg_desc') {
@@ -336,16 +375,17 @@
                 card.className = `asset-card group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl cursor-pointer ${isSelected ? 'selected' : ''}`;
                 const name = decrypt(item.name) || "暗号化データ";
                 const thumb = decrypt(item.thumbnail);
+                
                 card.innerHTML = `
                     <div class="absolute top-4 left-4 z-20 flex gap-2">
                         ${!isSelectMode ? `<button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl shadow-xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
                         ${isSelectMode ? `<div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}"><svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>` : ''}
                     </div>
-                    <div class="aspect-[4/5] w-full bg-slate-800 overflow-hidden relative">
-                        <img src="${thumb || ''}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" loading="lazy">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                    <div class="aspect-[4/5] w-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
+                        <img src="${thumb || ''}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none"></div>
                     </div>
-                    <div class="p-4 border-t border-slate-800/50 text-center"><p class="text-[10px] font-black text-slate-100 truncate tracking-tight uppercase">${name}</p></div>
+                    <div class="p-4 border-t border-slate-800/50 text-center bg-slate-900"><p class="text-[10px] font-black text-slate-100 truncate tracking-tight uppercase">${name}</p></div>
                 `;
                 card.onclick = (e) => {
                     if (isSelectMode) {
@@ -410,7 +450,7 @@
                         const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), cMapUrl: CMAP_URL, cMapPacked: true }).promise;
                         const page = await pdf.getPage(1);
                         const canvas = document.createElement('canvas');
-                        const vp = page.getViewport({ scale: 0.3 });
+                        const vp = page.getViewport({ scale: 0.4 });
                         canvas.height = vp.height; canvas.width = vp.width;
                         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
                         thumbData = canvas.toDataURL('image/jpeg', 0.6);
@@ -451,18 +491,27 @@
             loader.style.display = 'flex';
             container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
             container.scrollTop = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
             if (!decryptedData) { showToast("復号に失敗しました"); loader.style.display = 'none'; return; }
+            
             if (type === 'image') {
-                const img = new Image(); img.src = decryptedData; img.onload = () => loader.style.display = 'none'; container.appendChild(img);
+                const img = new Image(); 
+                img.src = decryptedData; 
+                img.onload = () => loader.style.display = 'none'; 
+                container.appendChild(img);
             } else {
                 try {
                     const bin = atob(decryptedData.split(',')[1]);
                     const bytes = new Uint8Array(bin.length);
                     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                     currentPDF = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: true }).promise;
-                    const wrapper = document.createElement('div'); wrapper.className = 'pdf-canvas-container';
+                    
+                    const wrapper = document.createElement('div'); 
+                    wrapper.className = 'pdf-canvas-container';
+                    wrapper.style.margin = 'auto'; // PDFコンテナも中央へ
                     container.appendChild(wrapper);
+                    
                     const dpr = window.devicePixelRatio || 1;
                     for (let i = 1; i <= currentPDF.numPages; i++) {
                         const page = await currentPDF.getPage(i);
