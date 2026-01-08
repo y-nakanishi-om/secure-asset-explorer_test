@@ -44,32 +44,34 @@
         .glass-header { background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .modal-bg { background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(12px); }
         
-        /* ライトボックス内メディアコンテナの設定 */
+        /* 【重要】ライトボックス内メディアコンテナの設定修正 */
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
             overflow: auto; 
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            align-items: flex-start; /* 左上を起点にする */
             justify-content: flex-start;
         }
         
-        /* ズーム用ラッパー */
+        /* ズーム用ラッパー: margin autoで中央に寄せつつ、はみ出した際はスクロールを有効に */
         #zoomWrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             min-width: 100%;
             min-height: 100%;
+            margin: auto; /* コンテンツが小さい時は中央配置、大きい時はスクロール可能にする */
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: top center;
-            padding: 40px 0;
+            transform-origin: center center;
+            padding: 60px;
+            box-sizing: border-box;
         }
 
         #zoomWrapper > img,
         #zoomWrapper > .pdf-canvas-container {
+            /* 子要素もマージンを自動にして配置を安定させる */
             margin: auto;
         }
 
@@ -143,32 +145,33 @@
         }
         .zoom-btn:hover { background: rgba(99, 102, 241, 0.3); }
         .zoom-btn:active { scale: 0.9; }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.95; transform: scale(0.995); }
+        }
+        .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
     </style>
 </head>
 <body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
 
     <!-- 認証レイヤー (プロフェッショナル・ミニマル仕様) -->
     <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-8">
-        <!-- ロゴエリア: 枠を撤廃し、より大きく配置 -->
         <div class="w-full max-w-lg mb-16 flex flex-col items-center animate-pulse-slow">
             <img src="logo.png" alt="Content Viewer" class="w-full max-w-[480px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(79,70,229,0.3)]" onerror="this.src='https://via.placeholder.com/600x200/020617/ffffff?text=CONTENT+VIEWER'">
-            <!-- 装飾用ライン: デザインの重心を整える -->
             <div class="w-24 h-1 bg-indigo-600/30 rounded-full mt-10"></div>
         </div>
 
-        <!-- 入力エリア: 浮遊感を出すため幅を絞り、透明度を活かしたデザイン -->
         <div class="w-full max-w-[320px] flex flex-col gap-6">
             <div class="relative group">
-                <input type="password" id="masterPassword" class="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-6 py-5 text-center text-white text-xl focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder-slate-600" placeholder="PASS CODE" autocomplete="current-password">
-                <!-- 入力欄の微かな光の演出 -->
+                <input type="password" id="masterPassword" class="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-6 py-5 text-center text-white text-xl focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder-slate-600" placeholder="パスワード" autocomplete="current-password">
                 <div class="absolute inset-0 rounded-2xl bg-indigo-500/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
             
             <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-5 rounded-2xl transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] active:scale-[0.98] uppercase tracking-[0.2em] text-xs">
-                Access System
+                log in
             </button>
 
-            <!-- 警告テキスト: 邪魔にならないよう極小サイズへ -->
             <div class="mt-8 opacity-20 hover:opacity-60 transition-opacity">
                 <p class="text-[8px] text-slate-500 uppercase tracking-widest leading-loose text-center">
                     ENCRYPTED SAFE STORAGE<br>AES-256 PBKDF2 PROTOCOL
@@ -242,7 +245,7 @@
         </button>
     </div>
 
-    <!-- 削除確認モーダル -->
+    <!-- 各種モーダル -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
@@ -254,10 +257,9 @@
         </div>
     </div>
 
-    <!-- ライトボックス -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
         <div class="zoom-controls">
-            <button onclick="zoomContent(1.2)" class="zoom-btn" title="拡大">
+            <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
             </button>
             <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小">
@@ -412,23 +414,15 @@
             let sortedList = [...library];
             const parseSize = (s) => parseFloat(decrypt(s)?.replace(/ MB$/, '')) || 0;
 
-            if (sortVal === 'reg_desc') {
-                sortedList.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (sortVal === 'reg_asc') {
-                sortedList.sort((a, b) => a.timestamp - b.timestamp);
-            } else if (sortVal === 'file_desc') {
-                sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
-            } else if (sortVal === 'file_asc') {
-                sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
-            } else if (sortVal === 'name_asc') {
-                sortedList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
-            } else if (sortVal === 'name_desc') {
-                sortedList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
-            } else if (sortVal === 'size_desc') {
-                sortedList.sort((a, b) => parseSize(b.size) - parseSize(a.size));
-            } else if (sortVal === 'size_asc') {
-                sortedList.sort((a, b) => parseSize(a.size) - parseSize(b.size));
-            }
+            if (sortVal === 'reg_desc') sortedList.sort((a, b) => b.timestamp - a.timestamp);
+            else if (sortVal === 'reg_asc') sortedList.sort((a, b) => a.timestamp - b.timestamp);
+            else if (sortVal === 'file_desc') sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
+            else if (sortVal === 'file_asc') sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
+            else if (sortVal === 'name_asc') sortedList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
+            else if (sortVal === 'name_desc') sortedList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
+            else if (sortVal === 'size_desc') sortedList.sort((a, b) => parseSize(b.size) - parseSize(a.size));
+            else if (sortVal === 'size_asc') sortedList.sort((a, b) => parseSize(a.size) - parseSize(b.size));
+            
             return sortedList;
         }
 
@@ -567,7 +561,7 @@
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
             loader.style.display = 'flex';
             container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
-            mc.scrollTop = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            mc.scrollTop = 0; mc.scrollLeft = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
             
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
             if (!decryptedData) { showToast("復号に失敗しました"); loader.style.display = 'none'; return; }
@@ -606,21 +600,49 @@
             }
         }
 
+        // ズーム処理
         function zoomContent(factor) {
+            const mc = document.getElementById('mediaContainer');
+            const prevZoom = currentZoom;
             currentZoom *= factor;
             currentZoom = Math.min(Math.max(currentZoom, 0.5), 8);
+            
+            // ズーム後に中央を維持するためのスクロール位置調整
+            const scrollX = mc.scrollLeft + mc.clientWidth / 2;
+            const scrollY = mc.scrollTop + mc.clientHeight / 2;
+            const ratio = currentZoom / prevZoom;
+            
             applyZoom();
+            
+            mc.scrollLeft = scrollX * ratio - mc.clientWidth / 2;
+            mc.scrollTop = scrollY * ratio - mc.clientHeight / 2;
         }
 
         function resetZoom() {
             currentZoom = 1;
             applyZoom();
+            const mc = document.getElementById('mediaContainer');
+            mc.scrollLeft = 0;
+            mc.scrollTop = 0;
         }
 
         function applyZoom() {
             const wrapper = document.getElementById('zoomWrapper');
             if (wrapper) {
+                // 拡大の起点を動的に変更：拡大時は左上、等倍時は中央に
+                // これにより「左側が見切れて戻れない」現象を回避
+                wrapper.style.transformOrigin = currentZoom > 1 ? 'top left' : 'center center';
                 wrapper.style.transform = `scale(${currentZoom})`;
+                
+                // コンテナの配置を拡大率に応じて調整
+                const mc = document.getElementById('mediaContainer');
+                if (currentZoom > 1) {
+                    mc.style.alignItems = 'flex-start';
+                    mc.style.justifyContent = 'flex-start';
+                } else {
+                    mc.style.alignItems = 'flex-start';
+                    mc.style.justifyContent = 'flex-start';
+                }
             }
         }
 
