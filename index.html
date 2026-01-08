@@ -150,9 +150,9 @@
     <!-- 認証レイヤー -->
     <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex items-center justify-center p-6">
         <div class="w-full max-w-sm bg-slate-900 border border-slate-800 p-10 rounded-[3.5rem] shadow-2xl text-center">
-            <!-- ロゴ画像エリア（従来のアイコンとテキストを置換） -->
+            <!-- ロゴ画像エリア（テキストとアイコンを削除） -->
             <div class="mb-10 flex justify-center">
-                <img src="logo.png" alt="Logo" class="max-w-[240px] max-h-[120px] object-contain drop-shadow-2xl" onerror="this.src='https://via.placeholder.com/200x100?text=No+Logo'">
+                <img src="logo.png" alt="Logo" class="max-w-[240px] max-h-[140px] object-contain drop-shadow-2xl" onerror="this.style.display='none'">
             </div>
             
             <input type="password" id="masterPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-5 text-center text-white text-xl focus:border-indigo-500 outline-none transition-all mb-6 shadow-inner" placeholder="••••••••" autocomplete="current-password">
