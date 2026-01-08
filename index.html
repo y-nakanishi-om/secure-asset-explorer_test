@@ -48,18 +48,31 @@
         #mediaContainer { 
             width: 100%; 
             height: 100%; 
-            overflow-y: auto; 
+            overflow: auto; 
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* 基本は上詰めだが、中身にmargin:autoを入れることで中央化 */
+            justify-content: flex-start;
         }
+        
+        /* ズーム用ラッパー */
+        #zoomWrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 100%;
+            min-height: 100%;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+
         #mediaContainer img { 
             max-width: 90%; 
             max-height: 90vh; 
             object-fit: contain; 
             display: block; 
-            margin: auto; /* これで上下左右中央へ */
+            margin: auto; 
             border-radius: 16px; 
             box-shadow: 0 40px 80px rgba(0,0,0,0.8); 
         }
@@ -98,6 +111,34 @@
             transition: all 0.2s;
         }
         .custom-select:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(99, 102, 241, 0.4); }
+
+        /* ズームコントロールのスタイル */
+        .zoom-controls {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            padding: 0.5rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .zoom-btn {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 0.75rem;
+            transition: all 0.2s;
+        }
+        .zoom-btn:hover { background: rgba(99, 102, 241, 0.3); }
+        .zoom-btn:active { scale: 0.9; }
     </style>
 </head>
 <body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
@@ -179,13 +220,12 @@
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
         </main>
 
-        <!-- 拡大解除ボタン -->
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-8 right-8 z-50 bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     </div>
 
-    <!-- モーダル・ライトボックス類 -->
+    <!-- 削除確認モーダル -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center modal-bg p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
@@ -197,11 +237,31 @@
         </div>
     </div>
 
+    <!-- ライトボックス -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
+        <!-- ズームコントロール（左上） -->
+        <div class="zoom-controls">
+            <button onclick="zoomContent(1.2)" class="zoom-btn" title="拡大">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            </button>
+            <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg>
+            </button>
+            <button onclick="resetZoom()" class="zoom-btn" title="リセット">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg>
+            </button>
+        </div>
+
         <button id="closeBtn" class="fixed top-8 right-8 text-white/50 hover:text-white transition-all z-[80] bg-slate-900/80 p-5 rounded-full border border-white/5 active:scale-90 shadow-2xl"><svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
         <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
-        <div id="mediaContainer"><div id="mediaLoader" class="absolute inset-0 flex items-center justify-center z-[75] bg-black/90"><div class="loader"></div></div></div>
+        
+        <div id="mediaContainer">
+            <!-- ズーム対象を包むラッパー -->
+            <div id="zoomWrapper">
+                <div id="mediaLoader" class="absolute inset-0 flex items-center justify-center z-[75] bg-black/90"><div class="loader"></div></div>
+            </div>
+        </div>
     </div>
 
     <div id="uploadModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center modal-bg p-4">
@@ -226,7 +286,7 @@
         const CONFIG_STORE = "config";
         let db = null, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
         let isSelectMode = false, selectedIds = new Set();
-        let currentPDF = null;
+        let currentPDF = null, currentZoom = 1;
 
         const generateId = () => (typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -486,11 +546,13 @@
             const list = sortedList || getSortedLibrary();
             if (index < 0 || index >= list.length) return;
             currentIdx = index;
-            const item = list[index], container = document.getElementById('mediaContainer'), loader = document.getElementById('mediaLoader'), lb = document.getElementById('lightbox');
+            resetZoom(); // ファイル切替時にズームリセット
+
+            const item = list[index], container = document.getElementById('zoomWrapper'), loader = document.getElementById('mediaLoader'), lb = document.getElementById('lightbox'), mc = document.getElementById('mediaContainer');
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
             loader.style.display = 'flex';
             container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
-            container.scrollTop = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
+            mc.scrollTop = 0; lb.classList.remove('hidden'); document.body.style.overflow = 'hidden';
             
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
             if (!decryptedData) { showToast("復号に失敗しました"); loader.style.display = 'none'; return; }
@@ -509,14 +571,13 @@
                     
                     const wrapper = document.createElement('div'); 
                     wrapper.className = 'pdf-canvas-container';
-                    wrapper.style.margin = 'auto'; // PDFコンテナも中央へ
                     container.appendChild(wrapper);
                     
                     const dpr = window.devicePixelRatio || 1;
                     for (let i = 1; i <= currentPDF.numPages; i++) {
                         const page = await currentPDF.getPage(i);
                         const ovp = page.getViewport({ scale: 1 });
-                        const scale = Math.max((container.clientWidth * 0.9) / ovp.width, 1);
+                        const scale = Math.max((mc.clientWidth * 0.9) / ovp.width, 1);
                         const vp = page.getViewport({ scale: scale * dpr });
                         const canvas = document.createElement('canvas');
                         canvas.className = 'pdf-page-canvas';
@@ -527,6 +588,28 @@
                         if (i === 1) loader.style.display = 'none';
                     }
                 } catch (e) { loader.style.display = 'none'; showToast("描画失敗"); }
+            }
+        }
+
+        // ズーム処理
+        function zoomContent(factor) {
+            currentZoom *= factor;
+            // 制限設定（最小0.5倍、最大5倍）
+            currentZoom = Math.min(Math.max(currentZoom, 0.5), 5);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const wrapper = document.getElementById('zoomWrapper');
+            if (wrapper) {
+                wrapper.style.transform = `scale(${currentZoom})`;
+                // ズーム倍率をトーストで表示（任意）
+                // showToast(`ズーム: ${Math.round(currentZoom * 100)}%`);
             }
         }
 
@@ -633,10 +716,13 @@
         window.addEventListener('dragover', e => e.preventDefault());
         window.addEventListener('dragleave', e => { if (e.relatedTarget === null) document.body.classList.remove('drag-active'); });
         window.addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag-active'); if (sessionKey) handleFiles(e.dataTransfer.files); });
+        
         document.getElementById('closeBtn').onclick = async () => { 
             document.getElementById('lightbox').classList.add('hidden'); document.body.style.overflow = ''; 
+            resetZoom();
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
         };
+        
         document.getElementById('nextBtn').onclick = (e) => { 
             e.stopPropagation(); 
             const sortedList = getSortedLibrary();
@@ -647,11 +733,16 @@
             const sortedList = getSortedLibrary();
             openLightbox((currentIdx - 1 + sortedList.length) % sortedList.length, sortedList); 
         };
+        
         window.addEventListener('keydown', e => {
             if (document.getElementById('lightbox').classList.contains('hidden')) return;
             if (e.key === 'Escape') document.getElementById('closeBtn').click();
             if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+            // キーボードでのズーム操作（+ / -）
+            if (e.key === '+' || e.key === ';') zoomContent(1.2);
+            if (e.key === '-' || e.key === '_') zoomContent(0.8);
+            if (e.key === '0') resetZoom();
         });
     </script>
 </body>
