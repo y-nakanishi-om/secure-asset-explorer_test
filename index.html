@@ -265,7 +265,7 @@
             grid.innerHTML = '';
             document.getElementById('fileCount').textContent = `登録数: ${library.length}`;
             if (library.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">金庫は空です</p></div>`;
+                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">ファイルが登録されていません。</p></div>`;
                 return;
             }
             library.forEach((item, index) => {
