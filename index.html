@@ -93,7 +93,6 @@
             transition: all 0.2s;
         }
 
-        /* 拡大画面用UIの小型化とオートフェード */
         .lightbox-controls {
             position: fixed;
             bottom: 2rem;
@@ -116,7 +115,6 @@
 
         .zoom-group { display: flex; gap: 0.4rem; border-right: 1px solid rgba(255, 255, 255, 0.1); padding-right: 0.75rem; }
 
-        /* ボタンサイズを4remから3remへ縮小 */
         .zoom-btn, .close-lightbox-btn {
             width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center;
             background: rgba(255, 255, 255, 0.05); color: white; border-radius: 1rem; transition: all 0.2s;
@@ -169,6 +167,11 @@
                 log in
             </button>
         </div>
+
+        <!-- 初期化ボタン (右下) -->
+        <button onclick="requestSystemReset()" class="fixed bottom-8 right-8 text-slate-700 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.3em] transition-colors py-2 px-4">
+            Initialize System
+        </button>
     </div>
 
     <!-- メインコンテンツ -->
@@ -180,40 +183,55 @@
         <header id="mainHeader" class="glass-header fixed bottom-0 left-0 right-0 z-40">
             <div class="max-w-[2560px] mx-auto px-6 py-6 flex flex-wrap justify-center md:justify-between items-center gap-6">
                 
+                <!-- 左端: ロゴ -->
                 <div class="flex items-center gap-4">
                     <div class="dynamic-ui-icon bg-indigo-600 flex items-center justify-center rotate-2 shadow-xl shadow-indigo-600/30 shrink-0">
                         <svg class="text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                     </div>
-                    <div class="hidden lg:block">
-                        <h1 class="dynamic-ui-text font-black text-white tracking-tighter uppercase italic">Secure Asset Explorer</h1>
-                        <p id="fileCount" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">登録数: 0</p>
-                    </div>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-center gap-3">
-                    <div id="normalActions" class="flex flex-wrap justify-center gap-3">
-                        <button onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black transition-all active:scale-95 shadow-lg">追加</button>
-                        <button onclick="toggleSelectMode()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700">選択</button>
-                        <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700 hidden lg:block">保存</button>
-                        
-                        <select id="sortSelect" onchange="renderGrid()" class="custom-select">
-                            <option value="reg_desc">登録順(新)</option>
-                            <option value="reg_asc">登録順(古)</option>
-                            <option value="file_desc">更新日(新)</option>
-                            <option value="file_asc">更新日(古)</option>
-                            <option value="name_asc">名前A-Z</option>
-                            <option value="name_desc">名前Z-A</option>
-                        </select>
-                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
-                        <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all border border-slate-700 hidden md:block">復元</button>
+                <!-- 中央: 操作アクションパネル -->
+                <div class="flex flex-wrap items-center justify-center gap-12 lg:gap-24">
+                    
+                    <div id="normalActions" class="flex flex-wrap items-center gap-6 lg:gap-16">
+                        <!-- グループ1: 登録数表示 読込 書込 -->
+                        <div class="flex items-center gap-6">
+                            <span id="fileCount" class="text-[12px] font-black text-slate-400 uppercase tracking-widest min-w-[80px]">登録数: 0</span>
+                            <div class="flex items-center gap-3">
+                                <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
+                                <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all border border-slate-700">読込</button>
+                                <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700">書込</button>
+                            </div>
+                        </div>
+
+                        <!-- グループ2: 追加 削除(選択モード) -->
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black transition-all active:scale-95 shadow-lg">追加</button>
+                            <button onclick="toggleSelectMode()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700">削除</button>
+                        </div>
+
+                        <!-- グループ3: 登録順 -->
+                        <div class="flex items-center">
+                            <select id="sortSelect" onchange="renderGrid()" class="custom-select">
+                                <option value="reg_desc">登録順(新)</option>
+                                <option value="reg_asc">登録順(古)</option>
+                                <option value="file_desc">更新日(新)</option>
+                                <option value="file_asc">更新日(古)</option>
+                                <option value="name_asc">名前A-Z</option>
+                                <option value="name_desc">名前Z-A</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="selectActions" class="flex gap-3 hidden">
-                        <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">削除 (0)</button>
+
+                    <!-- 選択モード時のアクション -->
+                    <div id="selectActions" class="flex items-center gap-4 hidden">
+                        <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除 (0)</button>
                         <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-200 font-black border border-slate-700">全選択</button>
                         <button onclick="toggleSelectMode()" class="dynamic-ui-btn bg-slate-200 text-slate-900 font-black">解除</button>
                     </div>
                 </div>
 
+                <!-- 右端: システム操作 -->
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-1 bg-slate-900/50 p-2 rounded-xl border border-white/5">
                         <button onclick="adjustUIScale(-0.1)" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
@@ -225,14 +243,14 @@
                         </button>
                     </div>
 
-                    <div class="flex gap-2 border-l border-slate-800 pl-4">
+                    <div class="flex gap-1 border-l border-slate-800 pl-4">
                         <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-3 transition-colors" title="枠内最大化"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
                         <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-3 transition-colors" title="全画面"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
                         <button onclick="lockVault()" class="text-slate-500 hover:text-white p-3 transition-colors" title="ロック"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
                     </div>
                 </div>
             </div>
-            <div id="storageUsage" class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[8px] font-black text-slate-600 uppercase tracking-widest pointer-events-none">ストレージ読み込み中...</div>
+            <div id="storageUsage" class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[8px] font-black text-slate-600 uppercase tracking-widest pointer-events-none opacity-40">STORAGE STATUS LOADING...</div>
         </header>
 
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-32 right-8 z-50 bg-indigo-600 hover:bg-indigo-50 text-white w-16 h-16 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
@@ -261,14 +279,14 @@
         </div>
     </div>
 
-    <!-- 各種モーダル -->
+    <!-- 汎用確認モーダル -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
-            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">削除しますか?</h3>
-            <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">完全に削除します。復元はできません。</p>
+            <h3 id="confirmTitle" class="text-2xl font-black text-white mb-4 uppercase italic">確認</h3>
+            <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">メッセージ</p>
             <div class="flex gap-4">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-5 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
-                <button id="confirmDeleteBtn" class="flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl">削除実行</button>
+                <button id="confirmBtn" class="flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl">実行</button>
             </div>
         </div>
     </div>
@@ -315,7 +333,8 @@
             uiScale = Math.min(Math.max(uiScale + delta, 0.6), 2.0);
             document.documentElement.style.setProperty('--ui-scale', uiScale);
             const pb = Math.round(180 * uiScale);
-            document.getElementById('mainContent').style.paddingBottom = pb + 'px';
+            const mc = document.getElementById('mainContent');
+            if (mc) mc.style.paddingBottom = pb + 'px';
             showToast(`UIサイズ: ${Math.round(uiScale * 100)}%`);
         }
 
@@ -365,6 +384,53 @@
             }, 100);
         }
 
+        // --- システム初期化機能 (修正版) ---
+        function requestSystemReset() {
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const msg = document.getElementById('confirmMessage');
+            const btn = document.getElementById('confirmBtn');
+
+            title.textContent = "システム初期化";
+            msg.textContent = "保存されているすべてのデータとパスワードを消去し、初期状態に戻します。この操作は取り消せません。よろしいですか？";
+            btn.textContent = "初期化を実行";
+            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
+
+            btn.onclick = () => {
+                // 二段階目の確認
+                msg.textContent = "【最終確認】本当にすべて消去されます。よろしいですか？";
+                btn.textContent = "確定"; // 文言を「確定」に変更
+                
+                btn.onclick = () => {
+                    showToast("初期化中...");
+                    
+                    // 重要: 既存のDB接続を閉じないと、削除リクエストが永遠に待機状態になる
+                    if (db) {
+                        db.close();
+                        db = null;
+                    }
+
+                    const req = indexedDB.deleteDatabase(DB_NAME);
+                    
+                    req.onsuccess = () => {
+                        showToast("完了。再起動します。");
+                        setTimeout(() => location.reload(), 1500);
+                    };
+                    
+                    req.onerror = () => {
+                        showToast("初期化に失敗しました。");
+                        // 失敗した場合はDBを再初期化して使える状態に戻す
+                        initDB();
+                    };
+
+                    req.onblocked = () => {
+                        showToast("他のタブで開いているため実行できません");
+                    };
+                };
+            };
+            modal.classList.remove('hidden');
+        }
+
         async function updateStorageUsage() {
             if (navigator.storage && navigator.storage.estimate) {
                 try {
@@ -373,7 +439,8 @@
                     const quota = estimate.quota || 0;
                     const usedMB = (usage / (1024 * 1024)).toFixed(1);
                     const availableGB = ((quota - usage) / (1024 * 1024 * 1024)).toFixed(1);
-                    document.getElementById('storageUsage').textContent = `USED: ${usedMB}MB / FREE: ${availableGB}GB`;
+                    const usageEl = document.getElementById('storageUsage');
+                    if (usageEl) usageEl.textContent = `USED: ${usedMB}MB / FREE: ${availableGB}GB`;
                 } catch(e) {}
             }
         }
@@ -428,7 +495,8 @@
             
             if (library.length === 0) {
                 grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">No assets found</p></div>`;
-                document.getElementById('fileCount').textContent = `登録数: 0`;
+                const fc = document.getElementById('fileCount');
+                if (fc) fc.textContent = `登録数: 0`;
                 return;
             }
 
@@ -466,13 +534,26 @@
                     delBtn.onclick = (e) => {
                         e.stopPropagation();
                         deleteTargetIds = [item.id];
+                        // 削除用確認
+                        const modal = document.getElementById('confirmModal');
+                        document.getElementById('confirmTitle').textContent = "資産の削除";
                         document.getElementById('confirmMessage').textContent = "この資産を完全に削除します。";
-                        document.getElementById('confirmModal').classList.remove('hidden');
+                        const btn = document.getElementById('confirmBtn');
+                        btn.textContent = "削除実行";
+                        btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
+                        btn.onclick = async () => {
+                            const tx = db.transaction(STORE_NAME, "readwrite");
+                            const store = tx.objectStore(STORE_NAME);
+                            deleteTargetIds.forEach(id => store.delete(id));
+                            tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
+                        };
+                        modal.classList.remove('hidden');
                     };
                 }
                 grid.appendChild(card);
             });
-            document.getElementById('fileCount').textContent = `登録数: ${library.length}`;
+            const fc = document.getElementById('fileCount');
+            if (fc) fc.textContent = `登録数: ${library.length}`;
         }
 
         function toggleSelectMode() {
@@ -493,14 +574,25 @@
 
         function updateBulkDeleteCount() {
             const btn = document.getElementById('bulkDeleteBtn');
-            if(btn) btn.textContent = `削除 (${selectedIds.size})`;
+            if(btn) btn.textContent = `一括削除 (${selectedIds.size})`;
         }
 
         function deleteSelectedAssets() {
             if (selectedIds.size === 0) return;
             deleteTargetIds = Array.from(selectedIds);
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').textContent = "一括削除";
             document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件の資産を完全に削除します。`;
-            document.getElementById('confirmModal').classList.remove('hidden');
+            const btn = document.getElementById('confirmBtn');
+            btn.textContent = "選択した項目を削除";
+            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
+            btn.onclick = async () => {
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                deleteTargetIds.forEach(id => store.delete(id));
+                tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
+            };
+            modal.classList.remove('hidden');
         }
 
         async function handleFiles(fileList) {
@@ -536,7 +628,6 @@
             updateStorageUsage();
         }
 
-        // --- コントロールのオートハイド制御 ---
         function wakeControls() {
             const ctrl = document.getElementById('lightboxControls');
             if (!ctrl) return;
@@ -544,7 +635,7 @@
             clearTimeout(controlsTimer);
             controlsTimer = setTimeout(() => {
                 ctrl.classList.add('idle');
-            }, 2000); // 2秒操作なしで薄くする
+            }, 2000); 
         }
 
         async function openLightbox(index, sortedList = null) {
@@ -565,7 +656,6 @@
             lb.classList.remove('hidden'); 
             document.body.style.overflow = 'hidden';
             
-            // 拡大画面が開いたらコントロール表示をアクティブにする
             wakeControls();
             
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
@@ -696,14 +786,6 @@
 
         function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); deleteTargetIds = []; }
         
-        document.getElementById('confirmDeleteBtn').onclick = async () => {
-            if (deleteTargetIds.length === 0) return;
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            deleteTargetIds.forEach(id => store.delete(id));
-            tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
-        };
-
         async function exportFullBackup() {
             const btn = document.getElementById('exportBtn'); if(btn) btn.textContent = "処理中...";
             try {
@@ -715,7 +797,7 @@
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
                 a.download = `vault-export-${new Date().toISOString().split('T')[0]}.json`; a.click();
                 showToast("保存完了");
-            } catch (e) { showToast("失敗"); } finally { if(btn) btn.textContent = "保存"; }
+            } catch (e) { showToast("失敗"); } finally { if(btn) btn.textContent = "書込"; }
         }
 
         async function importFullBackup(input) {
@@ -745,11 +827,13 @@
         
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
-        dropZone.onclick = () => fileInput.click();
-        fileInput.onchange = e => handleFiles(e.target.files);
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
-        dropZone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); });
-        dropZone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); if (sessionKey) handleFiles(e.dataTransfer.files); });
+        if (dropZone) dropZone.onclick = () => fileInput.click();
+        if (fileInput) fileInput.onchange = e => handleFiles(e.target.files);
+        if (dropZone) {
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); });
+            dropZone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); if (sessionKey) handleFiles(e.dataTransfer.files); });
+        }
         window.addEventListener('dragover', e => e.preventDefault());
         window.addEventListener('drop', e => e.preventDefault());
         
@@ -764,10 +848,9 @@
         document.getElementById('nextBtn').onclick = (e) => { e.stopPropagation(); const sortedList = getSortedLibrary(); openLightbox((currentIdx + 1) % sortedList.length, sortedList); };
         document.getElementById('prevBtn').onclick = (e) => { e.stopPropagation(); const sortedList = getSortedLibrary(); openLightbox((currentIdx - 1 + sortedList.length) % sortedList.length, sortedList); };
         
-        // オートハイド用イベント（コンテナ全体のタッチ・マウス移動で起動）
         const mediaContainer = document.getElementById('mediaContainer');
         ['mousemove', 'touchstart', 'scroll'].forEach(evt => {
-            mediaContainer.addEventListener(evt, wakeControls);
+            if (mediaContainer) mediaContainer.addEventListener(evt, wakeControls);
         });
 
         window.addEventListener('keydown', e => {
