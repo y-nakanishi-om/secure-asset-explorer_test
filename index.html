@@ -12,6 +12,7 @@
         
         :root {
             --ui-scale: 1.0;
+            --grid-cols: 5;
         }
 
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #020617; color: #f8fafc; }
@@ -37,6 +38,15 @@
             backdrop-filter: blur(32px); 
             -webkit-backdrop-filter: blur(32px); 
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #fileGrid {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+            gap: 2rem;
+        }
+        @media (max-width: 640px) {
+            #fileGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem; }
         }
 
         #mediaContainer { 
@@ -93,6 +103,19 @@
             transition: all 0.2s;
         }
 
+        .search-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: calc(13px * var(--ui-scale));
+            padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
+            border-radius: 10px;
+            outline: none;
+            width: calc(140px * var(--ui-scale));
+            transition: all 0.3s;
+        }
+        .search-input:focus { border-color: #6366f1; width: calc(200px * var(--ui-scale)); background: rgba(15, 23, 42, 0.9); }
+
         .lightbox-controls {
             position: fixed;
             bottom: 2rem;
@@ -144,6 +167,26 @@
             height: calc(1.6rem * var(--ui-scale));
         }
 
+        /* Grid Slider Styling */
+        .slider-control {
+            appearance: none;
+            width: calc(80px * var(--ui-scale));
+            height: 4px;
+            background: #1e293b;
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+        .slider-control::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #6366f1;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
         @keyframes pulse-slow {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(0.98); }
@@ -189,13 +232,13 @@
     </div>
 
     <!-- Main Content -->
-    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-48">
+    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-64">
         <main class="max-w-[2560px] mx-auto px-6 py-12">
-            <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
+            <div id="fileGrid"></div>
         </main>
 
         <header id="mainHeader" class="glass-header fixed bottom-0 left-0 right-0 z-40">
-            <div class="max-w-[2560px] mx-auto px-4 py-3 flex flex-nowrap justify-between items-center gap-2">
+            <div class="max-w-[2560px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4 md:gap-2">
                 
                 <!-- Logo -->
                 <div class="flex items-center gap-3 shrink-0">
@@ -204,20 +247,20 @@
                     </div>
                 </div>
 
-                <!-- Action Panel -->
-                <div class="flex flex-nowrap items-center justify-center gap-3 lg:gap-6 flex-1 overflow-hidden">
+                <!-- Action Panel (Flexible Center) -->
+                <div class="flex flex-wrap items-center justify-center gap-3 lg:gap-5 flex-1 order-3 md:order-2">
                     <!-- IO Actions -->
-                    <div id="ioActions" class="flex flex-nowrap items-center gap-1.5 shrink-0">
-                        <span id="fileCount" class="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden lg:inline mr-2">登録数: 0</span>
+                    <div id="ioActions" class="flex items-center gap-1.5 shrink-0 bg-white/5 p-1 rounded-xl">
+                        <span id="fileCount" class="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden xl:inline mr-2 ml-2">登録: 0</span>
                         <input type="file" id="importInput" class="hidden" accept=".json" onchange="initiateImport(this)">
                         <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">読込</button>
                         <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">書込</button>
                     </div>
 
-                    <div class="h-6 w-px bg-slate-800 shrink-0"></div>
+                    <div class="h-6 w-px bg-slate-800 shrink-0 hidden md:block"></div>
 
                     <!-- Manage Actions -->
-                    <div class="flex flex-nowrap items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-2 shrink-0">
                         <button id="addBtn" onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black shadow-lg">追加</button>
                         <button onclick="toggleSelectMode()" id="deleteModeBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">選択</button>
                     </div>
@@ -225,15 +268,17 @@
                     <div id="selectDivider" class="h-6 w-px bg-slate-800 shrink-0 hidden"></div>
 
                     <!-- Bulk Actions -->
-                    <div id="selectActions" class="flex flex-nowrap items-center gap-2 hidden shrink-0">
+                    <div id="selectActions" class="flex items-center gap-2 hidden shrink-0">
                         <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除</button>
                         <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-300 border border-slate-700 hidden lg:block">全選択</button>
                     </div>
 
-                    <div class="h-6 w-px bg-slate-800 shrink-0"></div>
+                    <div class="h-6 w-px bg-slate-800 shrink-0 hidden lg:block"></div>
 
-                    <!-- Sort & Play Group -->
-                    <div class="flex flex-nowrap items-center gap-3 shrink-0">
+                    <!-- Search & Sort & Play Group -->
+                    <div class="flex items-center gap-2 shrink-0">
+                        <input type="text" id="searchInput" oninput="handleSearch()" class="search-input" placeholder="検索...">
+                        
                         <div id="sortActions" class="shrink-0">
                             <select id="sortSelect" onchange="renderGrid()" class="custom-select">
                                 <option value="reg_desc">登録順(新)</option>
@@ -242,6 +287,7 @@
                                 <option value="file_asc">更新日(古)</option>
                                 <option value="name_asc">名前順(昇)</option>
                                 <option value="name_desc">名前順(降)</option>
+                                <option value="favorite">お気に入り</option>
                             </select>
                         </div>
                         <div class="h-6 w-px bg-slate-800 shrink-0"></div>
@@ -250,24 +296,36 @@
                 </div>
 
                 <!-- System Controls -->
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="flex items-center bg-slate-900/50 p-1 rounded-lg border border-white/5">
-                        <button onclick="adjustUIScale(-0.1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M20 12H4"/></svg>
-                        </button>
-                        <button onclick="adjustUIScale(0.1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
-                        </button>
+                <div class="flex items-center gap-2 shrink-0 order-2 md:order-3">
+                    <!-- Dynamic Grid & Scale Controls -->
+                    <div class="flex items-center bg-slate-900/50 px-2 py-1 rounded-lg border border-white/5 gap-3">
+                        <!-- Grid Size Slider -->
+                        <div class="flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                            <input type="range" id="gridSlider" min="2" max="12" value="5" oninput="adjustGridSize(this.value)" class="slider-control">
+                        </div>
+                        
+                        <div class="w-px h-4 bg-slate-800"></div>
+
+                        <!-- UI Scale Buttons -->
+                        <div class="flex items-center gap-0.5">
+                            <button onclick="adjustUIScale(-0.1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M20 12H4"/></svg>
+                            </button>
+                            <button onclick="adjustUIScale(0.1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex gap-1 border-l border-slate-800 pl-3">
-                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="最大化"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
-                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
-                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
+                    <div class="flex gap-1 border-l border-slate-800 pl-2">
+                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="最大化"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
+                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
                     </div>
                 </div>
             </div>
-            <div id="storageUsage" class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[8px] font-black text-slate-600 uppercase tracking-widest pointer-events-none opacity-40">STORAGE STATUS LOADING...</div>
+            <div id="storageUsage" class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[8px] font-black text-slate-600 uppercase tracking-widest pointer-events-none opacity-40 whitespace-nowrap">STORAGE STATUS LOADING...</div>
         </header>
 
         <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-32 right-8 z-50 bg-indigo-600 hover:bg-indigo-50 text-white w-16 h-16 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
@@ -363,6 +421,7 @@
         let currentPDF = null, currentZoom = 1, uiScale = 1.0, currentRotation = 0;
         let controlsTimer = null; 
         let pendingImportData = null;
+        let searchQuery = "";
 
         // Slideshow
         let isSlideshowPlaying = false;
@@ -390,10 +449,15 @@
         function adjustUIScale(delta) {
             uiScale = Math.min(Math.max(uiScale + delta, 0.6), 2.0);
             document.documentElement.style.setProperty('--ui-scale', uiScale);
-            const pb = Math.round(180 * uiScale);
+            const pb = Math.round(240 * uiScale); // 増やしたボトムパディング
             const mc = document.getElementById('mainContent');
             if (mc) mc.style.paddingBottom = pb + 'px';
             showToast(`UIサイズ: ${Math.round(uiScale * 100)}%`);
+        }
+
+        function adjustGridSize(cols) {
+            document.documentElement.style.setProperty('--grid-cols', cols);
+            showToast(`グリッド表示: ${cols}列`);
         }
 
         async function deriveKey(password, salt) {
@@ -486,6 +550,11 @@
             } catch(e) { return null; }
         }
 
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            renderGrid();
+        }
+
         function initiateImport(input) {
             const file = input.files[0];
             if (!file) return;
@@ -550,7 +619,6 @@
                 const assetStore = tx.objectStore(STORE_NAME);
                 
                 let count = 0;
-                // インポートした資産を現在の環境に合わせて時間を付与し直す
                 const now = Date.now();
                 for (let i = 0; i < pendingImportData.assets.length; i++) {
                     const item = pendingImportData.assets[i];
@@ -570,8 +638,9 @@
                         size: migrateField(item.size),
                         thumbnail: migrateField(item.thumbnail),
                         data: migrateField(item.data),
-                        timestamp: now + i, // 連番にすることで登録順の整合性を保つ
-                        fileModified: migrateField(item.fileModified)
+                        timestamp: now + i, 
+                        fileModified: migrateField(item.fileModified),
+                        isFavorite: item.isFavorite || false
                     };
 
                     if (newAsset.data !== null) {
@@ -607,36 +676,59 @@
 
         function getSortedLibrary() {
             const sortVal = document.getElementById('sortSelect').value;
-            let sortedList = [...library];
+            let filteredList = [...library];
             
-            if (sortVal === 'reg_desc') {
-                sortedList.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (sortVal === 'reg_asc') {
-                sortedList.sort((a, b) => a.timestamp - b.timestamp);
-            } else if (sortVal === 'file_desc') {
-                sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
-            } else if (sortVal === 'file_asc') {
-                sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
-            } else if (sortVal === 'name_asc') {
-                sortedList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
-            } else if (sortVal === 'name_desc') {
-                sortedList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
+            if (searchQuery) {
+                filteredList = filteredList.filter(item => {
+                    const name = decrypt(item.name) || "";
+                    return name.toLowerCase().includes(searchQuery);
+                });
             }
             
-            return sortedList;
+            if (sortVal === 'reg_desc') {
+                filteredList.sort((a, b) => b.timestamp - a.timestamp);
+            } else if (sortVal === 'reg_asc') {
+                filteredList.sort((a, b) => a.timestamp - b.timestamp);
+            } else if (sortVal === 'file_desc') {
+                filteredList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
+            } else if (sortVal === 'file_asc') {
+                filteredList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
+            } else if (sortVal === 'name_asc') {
+                filteredList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
+            } else if (sortVal === 'name_desc') {
+                filteredList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
+            } else if (sortVal === 'favorite') {
+                filteredList.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0) || b.timestamp - a.timestamp);
+            }
+            
+            return filteredList;
+        }
+
+        async function toggleFavorite(id) {
+            const asset = library.find(item => item.id === id);
+            if (!asset) return;
+            
+            asset.isFavorite = !asset.isFavorite;
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME).put(asset);
+            tx.oncomplete = () => {
+                renderGrid();
+                showToast(asset.isFavorite ? "お気に入りに追加" : "お気に入りを解除");
+            };
         }
 
         function renderGrid() {
             const grid = document.getElementById('fileGrid');
             grid.innerHTML = '';
             
-            if (library.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">コンテンツがありません</p></div>`;
+            const displayList = getSortedLibrary();
+            
+            if (displayList.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">${searchQuery ? '検索結果が見つかりません' : 'コンテンツがありません'}</p></div>`;
                 if (document.getElementById('fileCount')) document.getElementById('fileCount').textContent = `登録数: 0`;
                 return;
             }
 
-            const displayList = getSortedLibrary();
             displayList.forEach((item, index) => {
                 const card = document.createElement('div');
                 const isSelected = selectedIds.has(item.id);
@@ -646,9 +738,24 @@
                 
                 card.innerHTML = `
                     <div class="absolute top-4 left-4 z-20 flex gap-2">
-                        ${!isSelectMode ? `<button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl shadow-xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
-                        ${isSelectMode ? `<div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}"><svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>` : ''}
+                        ${!isSelectMode ? `
+                            <button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl shadow-xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        ` : ''}
+                        ${isSelectMode ? `
+                            <div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}">
+                                <svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                            </div>
+                        ` : ''}
                     </div>
+                    
+                    <div class="absolute top-4 right-4 z-20">
+                        <button onclick="event.stopPropagation(); toggleFavorite('${item.id}')" class="fav-btn p-3 rounded-2xl transition-all ${item.isFavorite ? 'text-red-500 bg-red-500/10' : 'text-white/20 bg-slate-950/40 opacity-0 group-hover:opacity-100'}">
+                            <svg class="w-6 h-6" fill="${item.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                        </button>
+                    </div>
+
                     <div class="aspect-[4/5] w-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
                         ${thumb ? `<img src="${thumb}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">` : `<div class="text-slate-700"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>`}
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none"></div>
@@ -786,7 +893,8 @@
                         thumbnail: encrypt(thumbData), 
                         data: encrypt(base64), 
                         timestamp: Date.now(), 
-                        fileModified: encrypt(file.lastModified.toString()) 
+                        fileModified: encrypt(file.lastModified.toString()),
+                        isFavorite: false
                     };
                     const tx = db.transaction(STORE_NAME, "readwrite");
                     tx.objectStore(STORE_NAME).put(secureItem);
@@ -949,8 +1057,9 @@
                 return;
             }
             currentPDFPageIdx = 1;
-            currentIdx = (currentIdx + 1) % slideshowList.length;
-            await openLightbox(currentIdx, slideshowList);
+            const currentList = slideshowList.length > 0 ? slideshowList : getSortedLibrary();
+            currentIdx = (currentIdx + 1) % currentList.length;
+            await openLightbox(currentIdx, currentList);
             resetSlideshowTimer();
         }
 
@@ -1000,8 +1109,8 @@
         // --- Event Initialization ---
         document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => handleFiles(e.target.files);
-        document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); openLightbox((currentIdx + 1) % library.length, getSortedLibrary()); };
-        document.getElementById('prevBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); openLightbox((currentIdx - 1 + library.length) % library.length, getSortedLibrary()); };
+        document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx + 1) % list.length, list); };
+        document.getElementById('prevBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx - 1 + list.length) % list.length, list); };
         
         // Window Level Drag & Drop for reliability
         window.addEventListener('dragover', e => { 
