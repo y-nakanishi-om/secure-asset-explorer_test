@@ -16,11 +16,11 @@
 
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #020617; color: #f8fafc; }
         
-        /* PDF表示の設定 */
+        /* PDF Settings */
         .pdf-canvas-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 40px 0; width: 100%; background-color: transparent; }
         .pdf-page-canvas { display: block; max-width: 95%; height: auto !important; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); background-color: white; border-radius: 12px; }
         
-        /* カスタムスクロールバー */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #020617; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; border: 2px solid #020617; }
@@ -57,7 +57,7 @@
             justify-content: center;
             margin: auto; 
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center center; /* 回転を考慮して中心に変更 */
+            transform-origin: center center;
             flex-shrink: 0;
             padding: 40px; 
             box-sizing: border-box;
@@ -84,10 +84,10 @@
             background: rgba(30, 41, 59, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #cbd5e1;
-            font-size: calc(14px * var(--ui-scale));
+            font-size: calc(13px * var(--ui-scale));
             font-weight: 800;
-            padding: calc(12px * var(--ui-scale)) calc(16px * var(--ui-scale));
-            border-radius: 12px;
+            padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+            border-radius: 10px;
             outline: none;
             cursor: pointer;
             transition: all 0.2s;
@@ -100,9 +100,9 @@
             transform: translateX(-50%);
             z-index: 100;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.75rem;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
             padding: 0.6rem;
             border-radius: 1.5rem;
@@ -113,6 +113,8 @@
         .lightbox-controls.idle { opacity: 0.15; pointer-events: auto; }
         .lightbox-controls.idle:hover { opacity: 1; }
 
+        .controls-inner { display: flex; align-items: center; gap: 0.75rem; }
+
         .zoom-group { display: flex; gap: 0.4rem; border-right: 1px solid rgba(255, 255, 255, 0.1); padding-right: 0.75rem; }
 
         .zoom-btn, .close-lightbox-btn {
@@ -120,21 +122,26 @@
             background: rgba(255, 255, 255, 0.05); color: white; border-radius: 1rem; transition: all 0.2s;
         }
         .zoom-btn:active, .close-lightbox-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
+        .zoom-btn.active { background: rgba(99, 102, 241, 0.4); color: white; }
         
-        .dynamic-ui-text { font-size: calc(1rem * var(--ui-scale)); }
+        .progress-container { width: 100%; height: 3px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background: #6366f1; transition: width 0.1s linear; }
+
+        .dynamic-ui-text { font-size: calc(0.95rem * var(--ui-scale)); }
         .dynamic-ui-btn { 
-            padding: calc(1rem * var(--ui-scale)) calc(1.5rem * var(--ui-scale)); 
-            font-size: calc(0.875rem * var(--ui-scale));
-            border-radius: calc(0.75rem * var(--ui-scale));
+            padding: calc(0.6rem * var(--ui-scale)) calc(1rem * var(--ui-scale)); 
+            font-size: calc(0.75rem * var(--ui-scale));
+            border-radius: calc(0.5rem * var(--ui-scale));
+            white-space: nowrap;
         }
         .dynamic-ui-icon { 
-            width: calc(3.5rem * var(--ui-scale)); 
-            height: calc(3.5rem * var(--ui-scale)); 
-            border-radius: calc(1rem * var(--ui-scale));
+            width: calc(2.8rem * var(--ui-scale)); 
+            height: calc(2.8rem * var(--ui-scale)); 
+            border-radius: calc(0.7rem * var(--ui-scale));
         }
         .dynamic-ui-icon svg {
-            width: calc(2rem * var(--ui-scale));
-            height: calc(2rem * var(--ui-scale));
+            width: calc(1.6rem * var(--ui-scale));
+            height: calc(1.6rem * var(--ui-scale));
         }
 
         @keyframes pulse-slow {
@@ -152,7 +159,7 @@
 </head>
 <body class="min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
 
-    <!-- 認証レイヤー -->
+    <!-- Auth Layer -->
     <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-8">
         <div class="w-full max-w-lg mb-12 flex flex-col items-center animate-pulse-slow">
             <img src="logo.png" alt="Secure Vault" class="w-full max-w-[420px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(79,70,229,0.4)]" onerror="this.src='https://via.placeholder.com/500x200/020617/ffffff?text=SECURE+VAULT'">
@@ -168,85 +175,90 @@
             </button>
         </div>
 
-        <!-- 初期化ボタン (右下) -->
         <button onclick="requestSystemReset()" class="fixed bottom-8 right-8 text-slate-700 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.3em] transition-colors py-2 px-4">
             Initialize System
         </button>
     </div>
 
-    <!-- メインコンテンツ -->
+    <!-- Main Content -->
     <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-48">
         <main class="max-w-[2560px] mx-auto px-6 py-12">
             <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-8"></div>
         </main>
 
         <header id="mainHeader" class="glass-header fixed bottom-0 left-0 right-0 z-40">
-            <div class="max-w-[2560px] mx-auto px-6 py-6 flex flex-wrap justify-center md:justify-between items-center gap-6">
+            <div class="max-w-[2560px] mx-auto px-4 py-3 flex flex-nowrap justify-between items-center gap-2">
                 
-                <!-- 左端: ロゴ -->
-                <div class="flex items-center gap-4">
-                    <div class="dynamic-ui-icon bg-indigo-600 flex items-center justify-center rotate-2 shadow-xl shadow-indigo-600/30 shrink-0">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="dynamic-ui-icon bg-indigo-600 flex items-center justify-center rotate-2 shadow-xl shadow-indigo-600/30">
                         <svg class="text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                     </div>
                 </div>
 
-                <!-- 中央: 操作アクションパネル -->
-                <div class="flex flex-wrap items-center justify-center gap-12 lg:gap-24">
+                <!-- Action Panel (Single Row Layout) -->
+                <div class="flex flex-nowrap items-center justify-center gap-3 lg:gap-6 flex-1 overflow-hidden">
                     
-                    <div id="normalActions" class="flex flex-wrap items-center gap-6 lg:gap-16">
-                        <!-- グループ1: 登録数表示 読込 書込 -->
-                        <div class="flex items-center gap-6">
-                            <span id="fileCount" class="text-[12px] font-black text-slate-400 uppercase tracking-widest min-w-[80px]">登録数: 0</span>
-                            <div class="flex items-center gap-3">
-                                <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
-                                <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all border border-slate-700">読込</button>
-                                <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700">書込</button>
-                            </div>
-                        </div>
-
-                        <!-- グループ2: 追加 削除(選択モード) -->
-                        <div class="flex items-center gap-3">
-                            <button onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black transition-all active:scale-95 shadow-lg">追加</button>
-                            <button onclick="toggleSelectMode()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-black transition-all active:scale-95 border border-slate-700">削除</button>
-                        </div>
-
-                        <!-- グループ3: 登録順 -->
-                        <div class="flex items-center">
-                            <select id="sortSelect" onchange="renderGrid()" class="custom-select">
-                                <option value="reg_desc">登録順(新)</option>
-                                <option value="reg_asc">登録順(古)</option>
-                                <option value="file_desc">更新日(新)</option>
-                                <option value="file_asc">更新日(古)</option>
-                                <option value="name_asc">名前A-Z</option>
-                                <option value="name_desc">名前Z-A</option>
-                            </select>
-                        </div>
+                    <!-- Group 1: Storage IO -->
+                    <div id="ioActions" class="flex flex-nowrap items-center gap-1.5 shrink-0">
+                        <span id="fileCount" class="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden lg:inline mr-2">登録数: 0</span>
+                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
+                        <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">読込</button>
+                        <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">書込</button>
                     </div>
 
-                    <!-- 選択モード時のアクション -->
-                    <div id="selectActions" class="flex items-center gap-4 hidden">
-                        <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除 (0)</button>
-                        <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-200 font-black border border-slate-700">全選択</button>
-                        <button onclick="toggleSelectMode()" class="dynamic-ui-btn bg-slate-200 text-slate-900 font-black">解除</button>
+                    <!-- Divider -->
+                    <div class="h-6 w-px bg-slate-800 shrink-0"></div>
+
+                    <!-- Main Group: Add / Play / Select -->
+                    <div class="flex flex-nowrap items-center gap-2 shrink-0">
+                        <button id="addBtn" onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg">追加</button>
+                        
+                        <!-- Direct Play: If select is on, plays selected. If off, plays all. -->
+                        <button id="mainPlayBtn" onclick="handlePlayClick()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg">再生</button>
+                        
+                        <!-- Select Mode Toggle: Purely for preparation/deletion -->
+                        <button onclick="toggleSelectMode()" id="deleteModeBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">選択</button>
+                    </div>
+
+                    <!-- Divider -->
+                    <div id="selectDivider" class="h-6 w-px bg-slate-800 shrink-0 hidden"></div>
+
+                    <!-- Selection-only Bulk Actions -->
+                    <div id="selectActions" class="flex flex-nowrap items-center gap-2 hidden shrink-0">
+                        <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除</button>
+                        <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-300 border border-slate-700 hidden lg:block">全選択</button>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="h-6 w-px bg-slate-800 shrink-0"></div>
+
+                    <!-- Sort -->
+                    <div id="sortActions" class="shrink-0">
+                        <select id="sortSelect" onchange="renderGrid()" class="custom-select">
+                            <option value="reg_desc">登録順(新)</option>
+                            <option value="reg_asc">登録順(古)</option>
+                            <option value="file_desc">更新日(新)</option>
+                            <option value="file_asc">更新日(古)</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- 右端: システム操作 -->
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-1 bg-slate-900/50 p-2 rounded-xl border border-white/5">
-                        <button onclick="adjustUIScale(-0.1)" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M20 12H4"/></svg>
+                <!-- System Controls -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center bg-slate-900/50 p-1 rounded-lg border border-white/5">
+                        <button onclick="adjustUIScale(-0.1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M20 12H4"/></svg>
                         </button>
-                        <span class="text-[10px] font-black text-slate-500 w-8 text-center uppercase tracking-tighter">UI</span>
-                        <button onclick="adjustUIScale(0.1)" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
+                        <button onclick="adjustUIScale(0.1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
                         </button>
                     </div>
 
-                    <div class="flex gap-1 border-l border-slate-800 pl-4">
-                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-3 transition-colors" title="枠内最大化"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
-                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-3 transition-colors" title="全画面"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
-                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-3 transition-colors" title="ロック"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
+                    <div class="flex gap-1 border-l border-slate-800 pl-3">
+                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="枠内最大化"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
+                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
                     </div>
                 </div>
             </div>
@@ -258,17 +270,23 @@
         </button>
     </div>
 
-    <!-- 拡大画面（ライトボックス） -->
+    <!-- Lightbox (Zoomed View) -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
         <div id="lightboxControls" class="lightbox-controls">
-            <div class="zoom-group">
-                <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
-                <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg></button>
-                <button onclick="resetZoom()" class="zoom-btn" title="リセット"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg></button>
-                <!-- 回転ボタンを追加 -->
-                <button onclick="rotateContent()" class="zoom-btn" title="回転"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
+            <div class="controls-inner">
+                <div class="zoom-group">
+                    <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
+                    <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg></button>
+                    <button onclick="resetZoom()" class="zoom-btn" title="リセット"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg></button>
+                    <button onclick="rotateContent()" class="zoom-btn" title="回転"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
+                </div>
+                <button id="slideshowBtn" onclick="toggleSlideshow()" class="zoom-btn" title="スライドショー">
+                    <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
-            <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
         </div>
 
         <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
@@ -281,7 +299,7 @@
         </div>
     </div>
 
-    <!-- 汎用確認モーダル -->
+    <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 id="confirmTitle" class="text-2xl font-black text-white mb-4 uppercase italic">確認</h3>
@@ -293,6 +311,7 @@
         </div>
     </div>
 
+    <!-- Upload Modal -->
     <div id="uploadModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[4rem] p-12 shadow-2xl relative text-center">
             <button onclick="toggleUploadModal()" class="absolute bottom-10 right-10 bg-slate-800 text-slate-400 hover:text-white p-5 rounded-2xl transition-colors"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -316,7 +335,16 @@
         let db = null, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
         let isSelectMode = false, selectedIds = new Set();
         let currentPDF = null, currentZoom = 1, uiScale = 1.0, currentRotation = 0;
-        let controlsTimer = null; // オートハイド用タイマー
+        let controlsTimer = null; 
+
+        // Slideshow
+        let isSlideshowPlaying = false;
+        let slideshowList = [];
+        let slideshowTimer = null;
+        let slideshowProgressInterval = null;
+        const SLIDE_DURATION = 5000; 
+        let slideTimeElapsed = 0;
+        let currentPDFPageIdx = 1;
 
         const generateId = () => (typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -403,22 +431,11 @@
                 
                 btn.onclick = () => {
                     showToast("初期化中...");
-                    if (db) {
-                        db.close();
-                        db = null;
-                    }
+                    if (db) { db.close(); db = null; }
                     const req = indexedDB.deleteDatabase(DB_NAME);
-                    req.onsuccess = () => {
-                        showToast("完了。再起動します。");
-                        setTimeout(() => location.reload(), 1500);
-                    };
-                    req.onerror = () => {
-                        showToast("初期化に失敗しました。");
-                        initDB();
-                    };
-                    req.onblocked = () => {
-                        showToast("他のタブで開いているため実行できません");
-                    };
+                    req.onsuccess = () => { showToast("完了。再起動します。"); setTimeout(() => location.reload(), 1500); };
+                    req.onerror = () => { showToast("初期化に失敗しました。"); initDB(); };
+                    req.onblocked = () => { showToast("他のタブで開いているため実行できません"); };
                 };
             };
             modal.classList.remove('hidden');
@@ -548,13 +565,40 @@
             if (fc) fc.textContent = `登録数: ${library.length}`;
         }
 
+        // --- Improved UX: Separate preparation (Select) and execution (Play) ---
         function toggleSelectMode() {
             isSelectMode = !isSelectMode;
             if (!isSelectMode) selectedIds.clear();
-            document.getElementById('normalActions').classList.toggle('hidden', isSelectMode);
+            
+            // Toggle visibility to keep it in 1 row
+            document.getElementById('ioActions').classList.toggle('hidden', isSelectMode);
+            document.getElementById('sortActions').classList.toggle('hidden', isSelectMode);
+            document.getElementById('addBtn').classList.toggle('hidden', isSelectMode);
+            document.getElementById('selectDivider').classList.toggle('hidden', !isSelectMode);
             document.getElementById('selectActions').classList.toggle('hidden', !isSelectMode);
+            
+            const delModeBtn = document.getElementById('deleteModeBtn');
+            if (isSelectMode) {
+                delModeBtn.classList.remove('bg-slate-800');
+                delModeBtn.classList.add('bg-indigo-900', 'ring-2', 'ring-indigo-500');
+                delModeBtn.textContent = "戻る";
+            } else {
+                delModeBtn.classList.remove('bg-indigo-900', 'ring-2', 'ring-indigo-500');
+                delModeBtn.classList.add('bg-slate-800');
+                delModeBtn.textContent = "選択";
+            }
+
             updateBulkDeleteCount();
             renderGrid();
+        }
+
+        // Play Button logic: Direct playback.
+        function handlePlayClick() {
+            // Start slideshow. If selected items exist, play them. Otherwise play all.
+            startSlideshow(selectedIds.size > 0);
+            
+            // If select mode was on, turn it off upon playing
+            if (isSelectMode) toggleSelectMode();
         }
 
         function toggleSelectAll() {
@@ -630,9 +674,99 @@
             }, 2000); 
         }
 
+        function startSlideshow(onlySelected = false) {
+            const fullList = getSortedLibrary();
+            if (onlySelected && selectedIds.size > 0) {
+                slideshowList = fullList.filter(item => selectedIds.has(item.id));
+            } else {
+                slideshowList = fullList;
+            }
+            
+            if (slideshowList.length === 0) {
+                showToast("再生可能なコンテンツがありません");
+                return;
+            }
+
+            isSlideshowPlaying = true;
+            openLightbox(0, slideshowList);
+            updateSlideshowUI();
+            resetSlideshowTimer();
+        }
+
+        function toggleSlideshow() {
+            isSlideshowPlaying = !isSlideshowPlaying;
+            if (isSlideshowPlaying) {
+                if (slideshowList.length === 0) slideshowList = getSortedLibrary();
+                resetSlideshowTimer();
+            } else {
+                stopSlideshowTimer();
+            }
+            updateSlideshowUI();
+        }
+
+        function stopSlideshowTimer() {
+            clearTimeout(slideshowTimer);
+            clearInterval(slideshowProgressInterval);
+            slideTimeElapsed = 0;
+            const pb = document.getElementById('progressBar');
+            if (pb) pb.style.width = '0%';
+        }
+
+        function resetSlideshowTimer() {
+            stopSlideshowTimer();
+            if (!isSlideshowPlaying) return;
+
+            const updateInterval = 100; 
+            slideshowProgressInterval = setInterval(() => {
+                slideTimeElapsed += updateInterval;
+                const progress = (slideTimeElapsed / SLIDE_DURATION) * 100;
+                const pb = document.getElementById('progressBar');
+                if (pb) pb.style.width = Math.min(progress, 100) + '%';
+            }, updateInterval);
+
+            slideshowTimer = setTimeout(() => { advanceSlideshow(); }, SLIDE_DURATION);
+        }
+
+        async function advanceSlideshow() {
+            if (currentPDF && currentPDFPageIdx < currentPDF.numPages) {
+                currentPDFPageIdx++;
+                const mc = document.getElementById('mediaContainer');
+                const canvases = document.querySelectorAll('.pdf-page-canvas');
+                if (canvases[currentPDFPageIdx - 1]) {
+                    mc.scrollTo({
+                        top: canvases[currentPDFPageIdx - 1].offsetTop - 40,
+                        behavior: 'smooth'
+                    });
+                }
+                resetSlideshowTimer();
+                return;
+            }
+
+            currentPDFPageIdx = 1;
+            const nextIdx = (currentIdx + 1) % slideshowList.length;
+            await openLightbox(nextIdx, slideshowList);
+            resetSlideshowTimer();
+        }
+
+        function updateSlideshowUI() {
+            const btn = document.getElementById('slideshowBtn');
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            if (isSlideshowPlaying) {
+                btn.classList.add('active');
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            } else {
+                btn.classList.remove('active');
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        }
+
         async function openLightbox(index, sortedList = null) {
             const list = sortedList || getSortedLibrary();
-            if (index < 0 || index >= list.length) return;
+            if (list.length === 0) return;
+            if (index < 0 || index >= list.length) index = 0;
             currentIdx = index;
 
             const item = list[index], container = document.getElementById('zoomWrapper'), loader = document.getElementById('mediaLoader'), lb = document.getElementById('lightbox'), mc = document.getElementById('mediaContainer');
@@ -644,7 +778,8 @@
             mc.scrollTop = 0; mc.scrollLeft = 0;
             mc.style.alignItems = 'center';
             currentZoom = 1;
-            currentRotation = 0; // 回転をリセット
+            currentRotation = 0;
+            currentPDFPageIdx = 1; 
             
             lb.classList.remove('hidden'); 
             document.body.style.overflow = 'hidden';
@@ -703,45 +838,37 @@
         function initZoomDimensions() {
             const mc = document.getElementById('mediaContainer');
             const wrapper = document.getElementById('zoomWrapper');
-            if (wrapper && mc) {
-                wrapper.style.width = '100%';
-                wrapper.style.height = 'auto';
-            }
+            if (wrapper && mc) { wrapper.style.width = '100%'; wrapper.style.height = 'auto'; }
         }
 
         function zoomContent(factor) {
             wakeControls();
+            if (isSlideshowPlaying) toggleSlideshow(); 
             const mc = document.getElementById('mediaContainer');
             const wrapper = document.getElementById('zoomWrapper');
             if (!wrapper) return;
-            
             const prevZoom = currentZoom;
             currentZoom *= factor;
             currentZoom = Math.min(Math.max(currentZoom, 0.5), 10);
-            
             const centerX_Ratio = (mc.scrollLeft + mc.clientWidth / 2) / wrapper.scrollWidth;
             const centerY_Ratio = (mc.scrollTop + mc.clientHeight / 2) / wrapper.scrollHeight;
-            
             applyZoom();
-            
             requestAnimationFrame(() => {
                 mc.scrollLeft = (centerX_Ratio * wrapper.scrollWidth) - (mc.clientWidth / 2);
                 mc.scrollTop = (centerY_Ratio * wrapper.scrollHeight) - (mc.clientHeight / 2);
             });
         }
 
-        // --- 回転機能の実装 ---
         function rotateContent() {
             wakeControls();
+            if (isSlideshowPlaying) toggleSlideshow();
             currentRotation = (currentRotation + 90) % 360;
             applyZoom();
         }
 
         function resetZoom() {
             wakeControls();
-            currentZoom = 1;
-            currentRotation = 0; // 回転もリセット
-            applyZoom();
+            currentZoom = 1; currentRotation = 0; applyZoom();
             const mc = document.getElementById('mediaContainer');
             if (mc) { mc.scrollLeft = 0; mc.scrollTop = 0; }
         }
@@ -750,17 +877,12 @@
             const wrapper = document.getElementById('zoomWrapper');
             const mc = document.getElementById('mediaContainer');
             if (wrapper && mc) {
-                // transformに回転を追加
                 wrapper.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
-                
                 const isOverflowing = (wrapper.offsetHeight * currentZoom > mc.clientHeight) || (wrapper.offsetWidth * currentZoom > mc.clientWidth);
-                
                 if (isOverflowing || currentZoom > 1.0) {
-                    mc.style.alignItems = 'flex-start';
-                    mc.style.justifyContent = 'flex-start';
+                    mc.style.alignItems = 'flex-start'; mc.style.justifyContent = 'flex-start';
                 } else {
-                    mc.style.alignItems = 'center';
-                    mc.style.justifyContent = 'center';
+                    mc.style.alignItems = 'center'; mc.style.justifyContent = 'center';
                 }
             }
         }
@@ -773,6 +895,7 @@
         function toggleFocusMode() { document.body.classList.toggle('hide-header'); window.dispatchEvent(new Event('resize')); }
 
         async function lockVault() {
+            if (isSlideshowPlaying) toggleSlideshow();
             sessionKey = null; library = []; currentIdx = -1; selectedIds.clear(); isSelectMode = false;
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
             const main = document.getElementById('mainContent');
@@ -840,6 +963,7 @@
         window.addEventListener('drop', e => e.preventDefault());
         
         async function closeLightboxUI() {
+            if (isSlideshowPlaying) toggleSlideshow();
             clearTimeout(controlsTimer);
             document.getElementById('lightbox').classList.add('hidden'); 
             document.body.style.overflow = ''; 
@@ -847,8 +971,16 @@
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
         }
 
-        document.getElementById('nextBtn').onclick = (e) => { e.stopPropagation(); const sortedList = getSortedLibrary(); openLightbox((currentIdx + 1) % sortedList.length, sortedList); };
-        document.getElementById('prevBtn').onclick = (e) => { e.stopPropagation(); const sortedList = getSortedLibrary(); openLightbox((currentIdx - 1 + sortedList.length) % sortedList.length, sortedList); };
+        document.getElementById('nextBtn').onclick = (e) => { 
+            e.stopPropagation(); if (isSlideshowPlaying) toggleSlideshow();
+            const sortedList = slideshowList.length > 0 ? slideshowList : getSortedLibrary(); 
+            openLightbox((currentIdx + 1) % sortedList.length, sortedList); 
+        };
+        document.getElementById('prevBtn').onclick = (e) => { 
+            e.stopPropagation(); if (isSlideshowPlaying) toggleSlideshow();
+            const sortedList = slideshowList.length > 0 ? slideshowList : getSortedLibrary(); 
+            openLightbox((currentIdx - 1 + sortedList.length) % sortedList.length, sortedList); 
+        };
         
         const mediaContainer = document.getElementById('mediaContainer');
         ['mousemove', 'touchstart', 'scroll'].forEach(evt => {
@@ -863,7 +995,8 @@
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
             if (e.key === '+' || e.key === ';') zoomContent(1.25);
             if (e.key === '-' || e.key === '_') zoomContent(0.8);
-            if (e.key === 'r' || e.key === 'R') rotateContent(); // 'R'キーで回転
+            if (e.key === 'r' || e.key === 'R') rotateContent();
+            if (e.key === ' ' || e.key === 'Enter') toggleSlideshow(); 
             if (e.key === '0') resetZoom();
         });
     </script>
