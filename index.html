@@ -57,7 +57,7 @@
             justify-content: center;
             margin: auto; 
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center top; 
+            transform-origin: center center; /* 回転を考慮して中心に変更 */
             flex-shrink: 0;
             padding: 40px; 
             box-sizing: border-box;
@@ -265,6 +265,8 @@
                 <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
                 <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg></button>
                 <button onclick="resetZoom()" class="zoom-btn" title="リセット"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg></button>
+                <!-- 回転ボタンを追加 -->
+                <button onclick="rotateContent()" class="zoom-btn" title="回転"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
             </div>
             <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
@@ -313,7 +315,7 @@
         const CONFIG_STORE = "config";
         let db = null, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
         let isSelectMode = false, selectedIds = new Set();
-        let currentPDF = null, currentZoom = 1, uiScale = 1.0;
+        let currentPDF = null, currentZoom = 1, uiScale = 1.0, currentRotation = 0;
         let controlsTimer = null; // オートハイド用タイマー
 
         const generateId = () => (typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -384,7 +386,6 @@
             }, 100);
         }
 
-        // --- システム初期化機能 (修正版) ---
         function requestSystemReset() {
             const modal = document.getElementById('confirmModal');
             const title = document.getElementById('confirmTitle');
@@ -397,32 +398,24 @@
             btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
 
             btn.onclick = () => {
-                // 二段階目の確認
                 msg.textContent = "【最終確認】本当にすべて消去されます。よろしいですか？";
-                btn.textContent = "確定"; // 文言を「確定」に変更
+                btn.textContent = "確定";
                 
                 btn.onclick = () => {
                     showToast("初期化中...");
-                    
-                    // 重要: 既存のDB接続を閉じないと、削除リクエストが永遠に待機状態になる
                     if (db) {
                         db.close();
                         db = null;
                     }
-
                     const req = indexedDB.deleteDatabase(DB_NAME);
-                    
                     req.onsuccess = () => {
                         showToast("完了。再起動します。");
                         setTimeout(() => location.reload(), 1500);
                     };
-                    
                     req.onerror = () => {
                         showToast("初期化に失敗しました。");
-                        // 失敗した場合はDBを再初期化して使える状態に戻す
                         initDB();
                     };
-
                     req.onblocked = () => {
                         showToast("他のタブで開いているため実行できません");
                     };
@@ -534,7 +527,6 @@
                     delBtn.onclick = (e) => {
                         e.stopPropagation();
                         deleteTargetIds = [item.id];
-                        // 削除用確認
                         const modal = document.getElementById('confirmModal');
                         document.getElementById('confirmTitle').textContent = "資産の削除";
                         document.getElementById('confirmMessage').textContent = "この資産を完全に削除します。";
@@ -652,6 +644,7 @@
             mc.scrollTop = 0; mc.scrollLeft = 0;
             mc.style.alignItems = 'center';
             currentZoom = 1;
+            currentRotation = 0; // 回転をリセット
             
             lb.classList.remove('hidden'); 
             document.body.style.overflow = 'hidden';
@@ -737,9 +730,17 @@
             });
         }
 
+        // --- 回転機能の実装 ---
+        function rotateContent() {
+            wakeControls();
+            currentRotation = (currentRotation + 90) % 360;
+            applyZoom();
+        }
+
         function resetZoom() {
             wakeControls();
             currentZoom = 1;
+            currentRotation = 0; // 回転もリセット
             applyZoom();
             const mc = document.getElementById('mediaContainer');
             if (mc) { mc.scrollLeft = 0; mc.scrollTop = 0; }
@@ -749,7 +750,8 @@
             const wrapper = document.getElementById('zoomWrapper');
             const mc = document.getElementById('mediaContainer');
             if (wrapper && mc) {
-                wrapper.style.transform = `scale(${currentZoom})`;
+                // transformに回転を追加
+                wrapper.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
                 
                 const isOverflowing = (wrapper.offsetHeight * currentZoom > mc.clientHeight) || (wrapper.offsetWidth * currentZoom > mc.clientWidth);
                 
@@ -861,6 +863,7 @@
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
             if (e.key === '+' || e.key === ';') zoomContent(1.25);
             if (e.key === '-' || e.key === '_') zoomContent(0.8);
+            if (e.key === 'r' || e.key === 'R') rotateContent(); // 'R'キーで回転
             if (e.key === '0') resetZoom();
         });
     </script>
