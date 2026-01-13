@@ -155,6 +155,14 @@
             background: rgba(99, 102, 241, 0.1);
             transform: scale(1.02);
         }
+
+        /* Shake animation for incorrect password */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.2s ease-in-out 0s 2; }
     </style>
 </head>
 <body class="min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
@@ -232,6 +240,8 @@
                                 <option value="reg_asc">登録順(古)</option>
                                 <option value="file_desc">更新日(新)</option>
                                 <option value="file_asc">更新日(古)</option>
+                                <option value="name_asc">名前順(昇)</option>
+                                <option value="name_desc">名前順(降)</option>
                             </select>
                         </div>
                         <div class="h-6 w-px bg-slate-800 shrink-0"></div>
@@ -308,11 +318,18 @@
 
     <!-- Import Modal (Password verification for migration) -->
     <div id="importModal" class="fixed inset-0 z-[301] hidden flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center">
+        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center relative">
             <h3 class="text-2xl font-black text-white mb-4 uppercase italic">データの復元</h3>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">取り込むデータのパスワードを入力してください。<br><span class="text-indigo-400 text-xs font-bold">現在の環境に合わせて安全に変換されます</span></p>
-            <input type="password" id="importPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-5 mb-6 text-center text-white focus:border-indigo-500 outline-none shadow-inner" placeholder="PASSWORD">
-            <div class="flex gap-4">
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                取り込むデータのパスワードを入力してください。<br>
+                <span class="text-indigo-400 text-xs font-bold block mt-1">※バックアップ作成時のパスワードが必要です</span>
+                <span class="text-slate-500 text-[10px] block mt-1 italic">現在の環境に合わせて安全に変換されます</span>
+            </p>
+            <div class="relative w-full">
+                <input type="password" id="importPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-5 mb-1 text-center text-white focus:border-indigo-500 outline-none shadow-inner transition-all" placeholder="PASSWORD">
+                <p id="importErrorMsg" class="text-red-500 text-[11px] font-bold h-5 opacity-0 transition-opacity">入力内容が間違っています</p>
+            </div>
+            <div class="flex gap-4 mt-2">
                 <button onclick="cancelImport()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl hover:bg-slate-700 transition-all">戻る</button>
                 <button id="executeImportBtn" class="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-xl">変換開始</button>
             </div>
@@ -332,7 +349,7 @@
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-44 left-1/2 -translate-x-1/2 z-[100] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">メッセージ</div>
+    <div id="toast" class="fixed bottom-44 left-1/2 -translate-x-1/2 z-[500] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">メッセージ</div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -480,7 +497,10 @@
                     pendingImportData = data;
                     document.getElementById('importModal').classList.remove('hidden');
                     const passIn = document.getElementById('importPassword');
+                    const errorMsg = document.getElementById('importErrorMsg');
                     passIn.value = "";
+                    passIn.classList.remove('shake');
+                    errorMsg.style.opacity = "0";
                     passIn.focus();
                     
                     document.getElementById('executeImportBtn').onclick = () => runMigrationImport();
@@ -498,13 +518,16 @@
         }
 
         async function runMigrationImport() {
-            const importPass = document.getElementById('importPassword').value;
+            const passInput = document.getElementById('importPassword');
+            const errorMsg = document.getElementById('importErrorMsg');
+            const importPass = passInput.value;
             if (!importPass) { showToast("パスワードを入力してください"); return; }
             
             const btn = document.getElementById('executeImportBtn');
             const originalText = btn.textContent;
             btn.disabled = true;
             btn.textContent = "変換中...";
+            errorMsg.style.opacity = "0";
             
             try {
                 const oldConfig = pendingImportData.config;
@@ -512,7 +535,11 @@
                 
                 const verify = decryptWithKey(oldConfig.challenge, oldConfig.iv, oldKey);
                 if (verify !== "OK") {
-                    showToast("バックアップのパスワードが違います");
+                    showToast("入力内容が間違っています");
+                    errorMsg.style.opacity = "1";
+                    passInput.value = "";
+                    passInput.classList.add('shake');
+                    setTimeout(() => passInput.classList.remove('shake'), 400);
                     btn.disabled = false;
                     btn.textContent = originalText;
                     return;
@@ -523,7 +550,10 @@
                 const assetStore = tx.objectStore(STORE_NAME);
                 
                 let count = 0;
-                for (const item of pendingImportData.assets) {
+                // インポートした資産を現在の環境に合わせて時間を付与し直す
+                const now = Date.now();
+                for (let i = 0; i < pendingImportData.assets.length; i++) {
+                    const item = pendingImportData.assets[i];
                     const migrateField = (field) => {
                         if (!field) return "";
                         const p = field.split(":");
@@ -540,7 +570,7 @@
                         size: migrateField(item.size),
                         thumbnail: migrateField(item.thumbnail),
                         data: migrateField(item.data),
-                        timestamp: item.timestamp || Date.now(),
+                        timestamp: now + i, // 連番にすることで登録順の整合性を保つ
                         fileModified: migrateField(item.fileModified)
                     };
 
@@ -578,10 +608,21 @@
         function getSortedLibrary() {
             const sortVal = document.getElementById('sortSelect').value;
             let sortedList = [...library];
-            if (sortVal === 'reg_desc') sortedList.sort((a, b) => b.timestamp - a.timestamp);
-            else if (sortVal === 'reg_asc') sortedList.sort((a, b) => a.timestamp - b.timestamp);
-            else if (sortVal === 'file_desc') sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
-            else if (sortVal === 'file_asc') sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
+            
+            if (sortVal === 'reg_desc') {
+                sortedList.sort((a, b) => b.timestamp - a.timestamp);
+            } else if (sortVal === 'reg_asc') {
+                sortedList.sort((a, b) => a.timestamp - b.timestamp);
+            } else if (sortVal === 'file_desc') {
+                sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
+            } else if (sortVal === 'file_asc') {
+                sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
+            } else if (sortVal === 'name_asc') {
+                sortedList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
+            } else if (sortVal === 'name_desc') {
+                sortedList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
+            }
+            
             return sortedList;
         }
 
