@@ -199,7 +199,7 @@
             transform: scale(1.02);
         }
 
-        /* Shake animation for incorrect password */
+        /* Shake animation */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-8px); }
@@ -217,13 +217,39 @@
             <div class="w-24 h-1 bg-indigo-600/30 rounded-full mt-8"></div>
         </div>
 
-        <div class="w-full max-w-[340px] flex flex-col gap-5">
-            <div class="relative group">
+        <div id="loginForm" class="w-full max-w-[340px] flex flex-col gap-4">
+            <div class="relative w-full">
                 <input type="password" id="masterPassword" class="w-full bg-slate-900/80 border border-slate-800 rounded-2xl px-6 py-6 text-center text-white text-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" placeholder="PASSWORD" autocomplete="current-password">
+                <p id="loginErrorMsg" class="text-red-500 text-xs font-bold text-center mt-2 h-4 opacity-0 transition-opacity">ログインできません。</p>
             </div>
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
+            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
                 log in
             </button>
+            <div class="flex items-center gap-4 my-2">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <span class="text-slate-600 text-[10px] font-black uppercase tracking-widest">OR</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+            <button onclick="showCreateAccount()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold py-4 rounded-2xl transition-all border border-slate-800 uppercase tracking-widest text-xs">
+                Setup New Vault
+            </button>
+        </div>
+
+        <!-- Create Account UI (Hidden by default) -->
+        <div id="createForm" class="hidden w-full max-w-[340px] flex flex-col gap-4">
+            <h3 class="text-white text-center font-black uppercase italic tracking-tighter text-lg mb-2">New Vault Setup</h3>
+            <p class="text-slate-500 text-[10px] text-center mb-4 leading-relaxed px-4">
+                新しいアカウントのパスワードを設定してください。<br>
+                <span class="text-indigo-400">※パスワードは復旧できません。忘れるとデータは永久に失われます。</span>
+            </p>
+            <input type="password" id="newPassword" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-5 text-center text-white focus:border-indigo-500 outline-none" placeholder="NEW PASSWORD">
+            <input type="password" id="confirmPassword" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-5 text-center text-white focus:border-indigo-500 outline-none" placeholder="CONFIRM PASSWORD">
+            <p id="createErrorMsg" class="text-red-500 text-[10px] font-bold text-center h-4 opacity-0 transition-opacity">一致しません</p>
+            
+            <div class="flex gap-3">
+                <button onclick="hideCreateAccount()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition-all uppercase text-xs tracking-widest">Back</button>
+                <button onclick="createAccount()" class="flex-[2] bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-500 transition-all shadow-xl uppercase text-xs tracking-widest">Create Now</button>
+            </div>
         </div>
 
         <button onclick="requestSystemReset()" class="fixed bottom-8 right-8 text-slate-700 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.3em] transition-colors py-2 px-4">
@@ -321,7 +347,7 @@
                     <div class="flex gap-1 border-l border-slate-800 pl-2">
                         <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="最大化"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
                         <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
-                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
+                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ログアウト"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
                     </div>
                 </div>
             </div>
@@ -465,54 +491,45 @@
         }
 
         async function authenticate() {
-            if (!db) { showToast("準備中..."); return; }
-            const passEl = document.getElementById('masterPassword');
-            const pass = passEl.value;
-            if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
+            if (!db) return;
+            const passInput = document.getElementById('masterPassword');
+            const errorMsg = document.getElementById('loginErrorMsg');
+            const pass = passInput.value;
             
-            //showToast("認証中...");
+            if (pass.length < 4) {
+                showLoginError("4文字以上入力してください");
+                return;
+            }
+
             const userHash = CryptoJS.SHA256(pass).toString();
             const configKey = "vault_config_" + userHash;
-            
-            const tx = db.transaction(CONFIG_STORE, "readwrite");
+            const tx = db.transaction(CONFIG_STORE, "readonly");
             const configStore = tx.objectStore(CONFIG_STORE);
             
-            let userConfig = await new Promise(r => { 
+            const userConfig = await new Promise(r => { 
                 const req = configStore.get(configKey); 
                 req.onsuccess = () => r(req.result); 
             });
-            
-            let salt, derived;
-            
+
             if (!userConfig) {
-                salt = CryptoJS.lib.WordArray.random(128/8).toString();
-                derived = await deriveKey(pass, salt);
-                const iv = CryptoJS.lib.WordArray.random(128/8);
-                const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
-                
-                userConfig = { 
-                    key: configKey, 
-                    salt: salt, 
-                    challenge: encryptedChallenge, 
-                    iv: iv.toString() 
-                };
-                configStore.put(userConfig);
-                showToast("新しい環境を作成しました");
-            } else {
-                salt = userConfig.salt;
-                derived = await deriveKey(pass, salt);
-                const testResult = decryptWithKey(userConfig.challenge, userConfig.iv, derived);
-                if (testResult !== "OK") { 
-                    showToast("パスワードが正しくありません"); 
-                    passEl.value = ""; 
-                    return; 
-                }
+                showLoginError("ログインできません。");
+                return;
             }
+
+            const salt = userConfig.salt;
+            const derived = await deriveKey(pass, salt);
+            const testResult = decryptWithKey(userConfig.challenge, userConfig.iv, derived);
             
+            if (testResult !== "OK") { 
+                showLoginError("ログインできません。");
+                return; 
+            }
+
+            // Success
             sessionKey = derived;
             currentUserId = userHash;
-            
-            passEl.value = "";
+            errorMsg.style.opacity = "0";
+            passInput.value = "";
             document.getElementById('authOverlay').style.display = 'none';
             const main = document.getElementById('mainContent');
             main.classList.remove('hidden', 'opacity-0');
@@ -523,6 +540,81 @@
                 window.dispatchEvent(new Event('resize'));
                 updateStorageUsage();
             }, 100);
+        }
+
+        function showLoginError(msg) {
+            const errorMsg = document.getElementById('loginErrorMsg');
+            const passInput = document.getElementById('masterPassword');
+            errorMsg.textContent = msg;
+            errorMsg.style.opacity = "1";
+            passInput.classList.add('shake');
+            passInput.value = "";
+            setTimeout(() => passInput.classList.remove('shake'), 400);
+        }
+
+        function showCreateAccount() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('createForm').classList.remove('hidden');
+            document.getElementById('newPassword').value = "";
+            document.getElementById('confirmPassword').value = "";
+            document.getElementById('createErrorMsg').style.opacity = "0";
+        }
+
+        function hideCreateAccount() {
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginErrorMsg').style.opacity = "0";
+        }
+
+        async function createAccount() {
+            const p1 = document.getElementById('newPassword').value;
+            const p2 = document.getElementById('confirmPassword').value;
+            const errorMsg = document.getElementById('createErrorMsg');
+
+            if (p1.length < 4) {
+                errorMsg.textContent = "4文字以上で設定してください";
+                errorMsg.style.opacity = "1";
+                return;
+            }
+            if (p1 !== p2) {
+                errorMsg.textContent = "パスワードが一致しません";
+                errorMsg.style.opacity = "1";
+                return;
+            }
+
+            const userHash = CryptoJS.SHA256(p1).toString();
+            const configKey = "vault_config_" + userHash;
+            
+            const txCheck = db.transaction(CONFIG_STORE, "readonly");
+            const existing = await new Promise(r => {
+                const req = txCheck.objectStore(CONFIG_STORE).get(configKey);
+                req.onsuccess = () => r(req.result);
+            });
+
+            if (existing) {
+                errorMsg.textContent = "既に登録されているパスワードです";
+                errorMsg.style.opacity = "1";
+                return;
+            }
+
+            const salt = CryptoJS.lib.WordArray.random(128/8).toString();
+            const derived = await deriveKey(p1, salt);
+            const iv = CryptoJS.lib.WordArray.random(128/8);
+            const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
+            
+            const userConfig = { 
+                key: configKey, 
+                salt: salt, 
+                challenge: encryptedChallenge, 
+                iv: iv.toString() 
+            };
+
+            const txSave = db.transaction(CONFIG_STORE, "readwrite");
+            txSave.objectStore(CONFIG_STORE).put(userConfig);
+            txSave.oncomplete = () => {
+                showToast("作成完了。ログインしてください");
+                hideCreateAccount();
+            };
         }
 
         function decryptWithKey(cipherText, ivHex, key) {
@@ -590,7 +682,7 @@
             const passInput = document.getElementById('importPassword');
             const errorMsg = document.getElementById('importErrorMsg');
             const importPass = passInput.value;
-            if (!importPass) { showToast("パスワードを入力してください"); return; }
+            if (!importPass) return;
             
             const btn = document.getElementById('executeImportBtn');
             const originalText = btn.textContent;
@@ -601,7 +693,6 @@
             try {
                 const oldConfig = pendingImportData.config;
                 const oldKey = await deriveKey(importPass, oldConfig.salt);
-                
                 const verify = decryptWithKey(oldConfig.challenge, oldConfig.iv, oldKey);
                 if (verify !== "OK") {
                     showToast("入力内容が間違っています");
@@ -724,8 +815,8 @@
             const displayList = getSortedLibrary();
             
             if (displayList.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">${searchQuery ? '検索結果が見つかりません' : 'コンテンツがありません'}</p></div>`;
-                if (document.getElementById('fileCount')) document.getElementById('fileCount').textContent = `登録数: 0`;
+                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">${searchQuery ? '検索結果なし' : 'コンテンツなし'}</p></div>`;
+                document.getElementById('fileCount').textContent = `登録数: 0`;
                 return;
             }
 
@@ -738,29 +829,19 @@
                 
                 card.innerHTML = `
                     <div class="absolute top-4 left-4 z-20 flex gap-2">
-                        ${!isSelectMode ? `
-                            <button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl shadow-xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
-                        ` : ''}
-                        ${isSelectMode ? `
-                            <div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}">
-                                <svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                            </div>
-                        ` : ''}
+                        ${!isSelectMode ? `<button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
+                        ${isSelectMode ? `<div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}"><svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>` : ''}
                     </div>
-                    
                     <div class="absolute top-4 right-4 z-20">
                         <button onclick="event.stopPropagation(); toggleFavorite('${item.id}')" class="fav-btn p-3 rounded-2xl transition-all ${item.isFavorite ? 'text-red-500 bg-red-500/10' : 'text-white/20 bg-slate-950/40 opacity-0 group-hover:opacity-100'}">
                             <svg class="w-6 h-6" fill="${item.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                         </button>
                     </div>
-
                     <div class="aspect-[4/5] w-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
                         ${thumb ? `<img src="${thumb}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">` : `<div class="text-slate-700"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>`}
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none"></div>
                     </div>
-                    <div class="p-4 border-t border-slate-800/50 text-center bg-slate-900"><p class="text-[10px] font-black text-slate-100 truncate tracking-tight uppercase">${name}</p></div>
+                    <div class="p-4 border-t border-slate-800/50 text-center bg-slate-900"><p class="text-[10px] font-black text-slate-100 truncate uppercase">${name}</p></div>
                 `;
                 card.onclick = (e) => {
                     if (isSelectMode) {
@@ -778,8 +859,8 @@
                         e.stopPropagation();
                         deleteTargetIds = [item.id];
                         const modal = document.getElementById('confirmModal');
-                        document.getElementById('confirmTitle').textContent = "資産の削除";
-                        document.getElementById('confirmMessage').textContent = "この資産を完全に削除します。";
+                        document.getElementById('confirmTitle').textContent = "コンテンツの削除";
+                        document.getElementById('confirmMessage').textContent = "このコンテンツを完全に削除します。";
                         const btn = document.getElementById('confirmBtn');
                         btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
                         btn.onclick = async () => {
@@ -792,8 +873,7 @@
                 }
                 grid.appendChild(card);
             });
-            const fc = document.getElementById('fileCount');
-            if (fc) fc.textContent = `登録数: ${library.length}`;
+            document.getElementById('fileCount').textContent = `登録数: ${library.length}`;
         }
 
         async function exportFullBackup() {
@@ -803,19 +883,13 @@
                 const tx = db.transaction(CONFIG_STORE, "readonly");
                 const configKey = "vault_config_" + currentUserId;
                 const userConfig = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get(configKey); req.onsuccess = () => r(req.result); });
-                
-                const backupData = { 
-                    version: "MultiUser-v5", 
-                    userId: currentUserId,
-                    config: userConfig, 
-                    assets: library 
-                };
+                const backupData = { version: "MultiUser-v5", userId: currentUserId, config: userConfig, assets: library };
                 const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
                 a.download = `vault-export-user-${new Date().toISOString().split('T')[0]}.json`; 
                 a.click();
                 showToast("バックアップを作成しました");
-            } catch (e) { showToast("書き出し失敗"); } finally { if(btn) btn.textContent = "書込"; }
+            } catch (e) { showToast("失敗"); } finally { if(btn) btn.textContent = "書込"; }
         }
 
         function toggleSelectMode() {
@@ -849,9 +923,9 @@
             deleteTargetIds = Array.from(selectedIds);
             const modal = document.getElementById('confirmModal');
             document.getElementById('confirmTitle').textContent = "一括削除";
-            document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件の資産を完全に削除します。`;
+            document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件を削除します。`;
             const btn = document.getElementById('confirmBtn');
-            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
+            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl shadow-xl";
             btn.onclick = async () => {
                 const tx = db.transaction(STORE_NAME, "readwrite");
                 const store = tx.objectStore(STORE_NAME);
@@ -859,52 +933,6 @@
                 tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
             };
             modal.classList.remove('hidden');
-        }
-
-        async function handleFiles(fileList) {
-            if (!sessionKey || !currentUserId) return;
-            if (fileList.length === 0) return;
-            showToast("処理中...");
-            for (const file of Array.from(fileList)) {
-                try {
-                    const type = file.type.startsWith('image/') ? 'image' : (file.type === 'application/pdf' ? 'pdf' : null);
-                    if (!type) continue;
-                    let thumbData = "";
-                    if (type === 'pdf') {
-                        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), cMapUrl: CMAP_URL, cMapPacked: true }).promise;
-                        const page = await pdf.getPage(1);
-                        const canvas = document.createElement('canvas');
-                        const vp = page.getViewport({ scale: 0.4 });
-                        canvas.height = vp.height; canvas.width = vp.width;
-                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                        thumbData = canvas.toDataURL('image/jpeg', 0.6);
-                        await pdf.destroy();
-                    } else {
-                        thumbData = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
-                    }
-                    const base64 = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
-                    
-                    const secureItem = { 
-                        id: generateId(), 
-                        ownerId: currentUserId,
-                        name: encrypt(file.name), 
-                        type: encrypt(type), 
-                        size: encrypt((file.size/1024/1024).toFixed(2) + " MB"), 
-                        thumbnail: encrypt(thumbData), 
-                        data: encrypt(base64), 
-                        timestamp: Date.now(), 
-                        fileModified: encrypt(file.lastModified.toString()),
-                        isFavorite: false
-                    };
-                    const tx = db.transaction(STORE_NAME, "readwrite");
-                    tx.objectStore(STORE_NAME).put(secureItem);
-                    await new Promise(r => tx.oncomplete = r);
-                } catch (err) { console.error(err); }
-            }
-            showToast("完了しました");
-            if (!document.getElementById('uploadModal').classList.contains('hidden')) toggleUploadModal();
-            loadFromDB();
-            updateStorageUsage();
         }
 
         async function openLightbox(index, list) {
@@ -915,7 +943,6 @@
             const container = document.getElementById('zoomWrapper');
             const loader = document.getElementById('mediaLoader');
             const mc = document.getElementById('mediaContainer');
-            
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
             loader.style.display = 'flex';
             container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
@@ -923,12 +950,9 @@
             currentZoom = 1; currentRotation = 0; currentPDFPageIdx = 1;
             lb.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
-            
             if (!isSlideshowPlaying) wakeControls();
-            
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
             if (!decryptedData) { showToast("復号失敗"); loader.style.display = 'none'; return; }
-            
             if (type === 'image') {
                 const img = new Image(); 
                 img.src = decryptedData; 
@@ -963,6 +987,18 @@
             }
         }
 
+        function wakeControls() {
+            const ctrl = document.getElementById('lightboxControls');
+            if (!ctrl) return;
+            ctrl.classList.remove('idle');
+            clearTimeout(controlsTimer);
+            controlsTimer = setTimeout(() => {
+                if (!document.getElementById('lightbox').classList.contains('hidden') && !isSlideshowPlaying) {
+                    ctrl.classList.add('idle');
+                }
+            }, 3000);
+        }
+
         function zoomContent(factor) {
             wakeControls();
             if (isSlideshowPlaying) toggleSlideshow();
@@ -970,10 +1006,8 @@
             const wrapper = document.getElementById('zoomWrapper');
             const centerX = (mc.scrollLeft + mc.clientWidth/2) / wrapper.scrollWidth;
             const centerY = (mc.scrollTop + mc.clientHeight/2) / wrapper.scrollHeight;
-            
             currentZoom = Math.min(Math.max(currentZoom * factor, 0.5), 10);
             applyZoom();
-            
             requestAnimationFrame(() => {
                 mc.scrollLeft = (centerX * wrapper.scrollWidth) - (mc.clientWidth/2);
                 mc.scrollTop = (centerY * wrapper.scrollHeight) - (mc.clientHeight/2);
@@ -1023,9 +1057,7 @@
             if (isSlideshowPlaying) {
                 if (slideshowList.length === 0) slideshowList = getSortedLibrary();
                 resetSlideshowTimer();
-            } else {
-                stopSlideshowTimer();
-            }
+            } else { stopSlideshowTimer(); }
             updateSlideshowUI();
         }
 
@@ -1077,19 +1109,28 @@
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
         }
 
-        function wakeControls() {
-            const ctrl = document.getElementById('lightboxControls');
-            ctrl.classList.remove('idle');
-            clearTimeout(controlsTimer);
-            controlsTimer = setTimeout(() => ctrl.classList.add('idle'), 3000);
-        }
-
-        /*ログアウトボタン押下時のポップアップ動作*/
+        /* ログアウト処理：全ての表示状態を完全にクリアする */
         function lockVault() {
-            sessionKey = null; currentUserId = null; library = [];
-            document.getElementById('mainContent').classList.add('hidden');
+            sessionKey = null;
+            currentUserId = null;
+            library = [];
+            searchQuery = "";
+            
+            // 検索バーのリセット
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = "";
+            
+            // コンテンツグリッドを完全に空にする
+            const grid = document.getElementById('fileGrid');
+            if (grid) grid.innerHTML = '';
+            
+            // UIを隠してログイン画面へ
+            document.getElementById('mainContent').classList.add('hidden', 'opacity-0');
             document.getElementById('authOverlay').style.display = 'flex';
-            //showToast("ロックしました");
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            
+            showToast("ログアウトしました");
         }
 
         function toggleFocusMode() { document.body.classList.toggle('hide-header'); }
@@ -1100,21 +1141,17 @@
             const title = document.getElementById('confirmTitle');
             const msg = document.getElementById('confirmMessage');
             const btn = document.getElementById('confirmBtn');
-
             title.textContent = "全システム初期化";
-            msg.textContent = "すべてのパスワード、すべてのデータを消去して工場出荷時の状態に戻します。よろしいですか？";
+            msg.textContent = "すべてのパスワード、すべてのデータを消去して初期状態に戻します。よろしいですか？";
             btn.textContent = "初期化を実行";
             btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
-
             btn.onclick = () => {
                 msg.textContent = "【最終確認】全ユーザーのデータが失われます。";
                 btn.textContent = "確定";
                 btn.onclick = () => {
-                    showToast("初期化中...");
                     if (db) { db.close(); db = null; }
                     const req = indexedDB.deleteDatabase(DB_NAME);
-                    req.onsuccess = () => { showToast("完了。再起動..."); setTimeout(() => location.reload(), 1500); };
-                    req.onerror = () => { showToast("失敗しました。"); initDB(); };
+                    req.onsuccess = () => { setTimeout(() => location.reload(), 1000); };
                 };
             };
             modal.classList.remove('hidden');
@@ -1138,7 +1175,6 @@
         document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx + 1) % list.length, list); };
         document.getElementById('prevBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx - 1 + list.length) % list.length, list); };
         
-        // Window Level Drag & Drop for reliability
         window.addEventListener('dragover', e => { 
             e.preventDefault(); 
             if (sessionKey) {
@@ -1148,16 +1184,12 @@
             }
         });
         window.addEventListener('dragleave', e => { 
-            if (e.relatedTarget === null) {
-                document.getElementById('dropZone').classList.remove('drag-over');
-            }
+            if (e.relatedTarget === null) document.getElementById('dropZone').classList.remove('drag-over');
         });
         window.addEventListener('drop', e => { 
             e.preventDefault(); 
             document.getElementById('dropZone').classList.remove('drag-over');
-            if (sessionKey) {
-                handleFiles(e.dataTransfer.files);
-            }
+            if (sessionKey) handleFiles(e.dataTransfer.files);
         });
 
         window.addEventListener('keydown', e => {
@@ -1168,7 +1200,10 @@
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
             if (e.key === ' ') toggleSlideshow();
         });
-        ['mousemove', 'touchstart', 'scroll'].forEach(e => document.getElementById('mediaContainer').addEventListener(e, wakeControls));
+        ['mousemove', 'touchstart', 'scroll'].forEach(e => {
+            const container = document.getElementById('mediaContainer');
+            if (container) container.addEventListener(e, wakeControls);
+        });
     </script>
 </body>
 </html>
