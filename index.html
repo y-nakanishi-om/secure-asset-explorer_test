@@ -1164,10 +1164,9 @@
             }
         }
 
+        /* 修正：非同期処理中にトランザクションが自動終了するバグを修正 */
         async function handleFiles(files) {
             if (!files.length || !sessionKey) return;
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
             const now = Date.now();
             let addedCount = 0;
 
@@ -1175,21 +1174,22 @@
                 const file = files[i];
                 if (!file.type.match('image.*') && file.type !== 'application/pdf') continue;
 
-                const reader = new FileReader();
-                const fileDataPromise = new Promise(resolve => {
+                // 1. ファイルデータの読み取り（非同期）
+                const data = await new Promise(resolve => {
+                    const reader = new FileReader();
                     reader.onload = e => resolve(e.target.result);
                     reader.readAsDataURL(file);
                 });
 
-                const data = await fileDataPromise;
+                // 2. サムネイルの作成（非同期）
                 let thumb = "";
-
                 if (file.type.match('image.*')) {
                     thumb = await createThumbnail(data);
                 } else if (file.type === 'application/pdf') {
                     thumb = await createPDFThumbnail(data);
                 }
 
+                // 3. アセットオブジェクトの組み立て
                 const asset = {
                     id: generateId(),
                     ownerId: currentUserId,
@@ -1202,16 +1202,29 @@
                     fileModified: encrypt(file.lastModified.toString()),
                     isFavorite: false
                 };
-                store.put(asset);
-                addedCount++;
+
+                // 4. トランザクションを開始して即座に書き込み（非同期処理を挟まない）
+                try {
+                    await new Promise((resolve, reject) => {
+                        const tx = db.transaction(STORE_NAME, "readwrite");
+                        const store = tx.objectStore(STORE_NAME);
+                        const request = store.put(asset);
+                        tx.oncomplete = () => resolve();
+                        tx.onerror = () => reject(tx.error);
+                    });
+                    addedCount++;
+                } catch (err) {
+                    console.error("保存失敗:", err);
+                }
             }
 
-            tx.oncomplete = () => {
+            // 全て完了後の処理
+            if (addedCount > 0) {
                 showToast(`${addedCount}件のファイルを暗号化保存しました`);
-                loadFromDB();
+                await loadFromDB();
                 if(!document.getElementById('uploadModal').classList.contains('hidden')) toggleUploadModal();
                 updateStorageUsage();
-            };
+            }
         }
 
         function createThumbnail(dataUrl) {
