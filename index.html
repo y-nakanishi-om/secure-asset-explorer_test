@@ -116,19 +116,20 @@
         }
         .search-input:focus { border-color: #6366f1; width: calc(200px * var(--ui-scale)); background: rgba(15, 23, 42, 0.9); }
 
+        /* Lightbox Controls (Right Side Floating) */
         .lightbox-controls {
             position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
             z-index: 100;
             display: flex;
             flex-direction: column;
             align-items: center;
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
-            padding: 0.6rem;
-            border-radius: 1.5rem;
+            padding: 0.75rem;
+            border-radius: 2rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
             transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -136,9 +137,9 @@
         .lightbox-controls.idle { opacity: 0.15; pointer-events: auto; }
         .lightbox-controls.idle:hover { opacity: 1; }
 
-        .controls-inner { display: flex; align-items: center; gap: 0.75rem; }
+        .controls-inner { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
 
-        .zoom-group { display: flex; gap: 0.4rem; border-right: 1px solid rgba(255, 255, 255, 0.1); padding-right: 0.75rem; }
+        .zoom-group { display: flex; flex-direction: column; gap: 0.4rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.75rem; }
 
         .zoom-btn, .close-lightbox-btn {
             width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center;
@@ -147,8 +148,9 @@
         .zoom-btn:active, .close-lightbox-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
         .zoom-btn.active { background: rgba(99, 102, 241, 0.4); color: white; }
         
-        .progress-container { width: 100%; height: 3px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin-top: 8px; overflow: hidden; }
-        .progress-bar { height: 100%; width: 0%; background: #6366f1; transition: width 0.1s linear; }
+        /* Progress Container for Vertical orientation */
+        .progress-container { width: 4px; height: 100px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin: 8px 0; overflow: hidden; }
+        .progress-bar { width: 100%; height: 0%; background: #6366f1; transition: height 0.1s linear; }
 
         .dynamic-ui-text { font-size: calc(0.95rem * var(--ui-scale)); }
         .dynamic-ui-btn { 
@@ -368,6 +370,7 @@
                 </button>
                 <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
+            <!-- Progress for vertical panel -->
             <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
         </div>
 
@@ -886,13 +889,17 @@
         function toggleSelectMode() {
             isSelectMode = !isSelectMode;
             if (!isSelectMode) selectedIds.clear();
+            
+            // Revert Selection actions to the bottom header center
             document.getElementById('ioActions').classList.toggle('hidden', isSelectMode);
             document.getElementById('sortActions').parentNode.classList.toggle('hidden', isSelectMode);
             document.getElementById('addBtn').classList.toggle('hidden', isSelectMode);
             document.getElementById('selectDivider').classList.toggle('hidden', !isSelectMode);
             document.getElementById('selectActions').classList.toggle('hidden', !isSelectMode);
+            
             const delModeBtn = document.getElementById('deleteModeBtn');
             delModeBtn.textContent = isSelectMode ? "解除" : "選択";
+            
             updateSelectionButtons();
             renderGrid();
         }
@@ -904,7 +911,6 @@
             updateSelectionButtons();
         }
 
-        /* 選択中のボタンのテキストを一括更新 */
         function updateSelectionButtons() {
             const count = selectedIds.size;
             const delBtn = document.getElementById('bulkDeleteBtn');
@@ -946,7 +952,6 @@
             lb.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             
-            // ライトボックスを開いた直後にUIタイマーを起動
             wakeControls();
 
             const decryptedData = decrypt(item.data), type = decrypt(item.type);
@@ -985,18 +990,17 @@
             }
         }
 
-        /* UIのフェードアウト機能：2秒後に薄くなるように修正 */
+        /* 2秒後に操作パネルを薄くする機能 */
         function wakeControls() {
             const ctrl = document.getElementById('lightboxControls');
             if (!ctrl) return;
             ctrl.classList.remove('idle');
             clearTimeout(controlsTimer);
             controlsTimer = setTimeout(() => {
-                // ライトボックスが表示中であれば、スライドショー再生中であってもUIを隠す
                 if (!document.getElementById('lightbox').classList.contains('hidden')) {
                     ctrl.classList.add('idle');
                 }
-            }, 2000); // ご指摘通り2秒に変更
+            }, 2000); 
         }
 
         function zoomContent(factor) {
@@ -1070,7 +1074,8 @@
             const pb = document.getElementById('progressBar');
             slideshowProgressInterval = setInterval(() => {
                 slideTimeElapsed += 100;
-                if (pb) pb.style.width = Math.min((slideTimeElapsed / SLIDE_DURATION) * 100, 100) + '%';
+                // Vertical progress: sets height
+                if (pb) pb.style.height = Math.min((slideTimeElapsed / SLIDE_DURATION) * 100, 100) + '%';
             }, 100);
             slideshowTimer = setTimeout(advanceSlideshow, SLIDE_DURATION);
         }
@@ -1079,7 +1084,7 @@
             clearTimeout(slideshowTimer);
             clearInterval(slideshowProgressInterval);
             slideTimeElapsed = 0;
-            if (document.getElementById('progressBar')) document.getElementById('progressBar').style.width = '0%';
+            if (document.getElementById('progressBar')) document.getElementById('progressBar').style.height = '0%';
         }
 
         async function advanceSlideshow() {
@@ -1164,7 +1169,6 @@
             }
         }
 
-        /* 修正：非同期処理中にトランザクションが自動終了するバグを修正 */
         async function handleFiles(files) {
             if (!files.length || !sessionKey) return;
             const now = Date.now();
@@ -1174,14 +1178,12 @@
                 const file = files[i];
                 if (!file.type.match('image.*') && file.type !== 'application/pdf') continue;
 
-                // 1. ファイルデータの読み取り（非同期）
                 const data = await new Promise(resolve => {
                     const reader = new FileReader();
                     reader.onload = e => resolve(e.target.result);
                     reader.readAsDataURL(file);
                 });
 
-                // 2. サムネイルの作成（非同期）
                 let thumb = "";
                 if (file.type.match('image.*')) {
                     thumb = await createThumbnail(data);
@@ -1189,7 +1191,6 @@
                     thumb = await createPDFThumbnail(data);
                 }
 
-                // 3. アセットオブジェクトの組み立て
                 const asset = {
                     id: generateId(),
                     ownerId: currentUserId,
@@ -1203,7 +1204,6 @@
                     isFavorite: false
                 };
 
-                // 4. トランザクションを開始して即座に書き込み（非同期処理を挟まない）
                 try {
                     await new Promise((resolve, reject) => {
                         const tx = db.transaction(STORE_NAME, "readwrite");
@@ -1218,7 +1218,6 @@
                 }
             }
 
-            // 全て完了後の処理
             if (addedCount > 0) {
                 showToast(`${addedCount}件のファイルを暗号化保存しました`);
                 await loadFromDB();
@@ -1260,7 +1259,6 @@
             } catch (e) { return ""; }
         }
 
-        // --- Event Initialization ---
         document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => handleFiles(e.target.files);
         document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx + 1) % list.length, list); };
