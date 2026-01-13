@@ -1146,7 +1146,7 @@
             btn.textContent = "初期化を実行";
             btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
             btn.onclick = () => {
-                msg.textContent = "【最終確認】全ユーザーのデータが失われます。";
+                msg.textContent = "【最終確認】この端末の全ユーザーのデータが失われます。";
                 btn.textContent = "確定";
                 btn.onclick = () => {
                     if (db) { db.close(); db = null; }
