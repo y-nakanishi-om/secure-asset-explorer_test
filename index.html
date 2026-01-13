@@ -449,7 +449,7 @@
         function adjustUIScale(delta) {
             uiScale = Math.min(Math.max(uiScale + delta, 0.6), 2.0);
             document.documentElement.style.setProperty('--ui-scale', uiScale);
-            const pb = Math.round(240 * uiScale); // 増やしたボトムパディング
+            const pb = Math.round(240 * uiScale);
             const mc = document.getElementById('mainContent');
             if (mc) mc.style.paddingBottom = pb + 'px';
             showToast(`UIサイズ: ${Math.round(uiScale * 100)}%`);
@@ -470,7 +470,7 @@
             const pass = passEl.value;
             if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
             
-            showToast("認証中...");
+            //showToast("認証中...");
             const userHash = CryptoJS.SHA256(pass).toString();
             const configKey = "vault_config_" + userHash;
             
@@ -1084,17 +1084,43 @@
             controlsTimer = setTimeout(() => ctrl.classList.add('idle'), 3000);
         }
 
+        /*ログアウトボタン押下時のポップアップ動作*/
         function lockVault() {
             sessionKey = null; currentUserId = null; library = [];
             document.getElementById('mainContent').classList.add('hidden');
             document.getElementById('authOverlay').style.display = 'flex';
-            showToast("ロックしました");
+            //showToast("ロックしました");
         }
 
         function toggleFocusMode() { document.body.classList.toggle('hide-header'); }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-        function requestSystemReset() { if(confirm("全システムを初期化します。よろしいですか？")) { indexedDB.deleteDatabase(DB_NAME); location.reload(); } }
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        
+        function requestSystemReset() {
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const msg = document.getElementById('confirmMessage');
+            const btn = document.getElementById('confirmBtn');
+
+            title.textContent = "全システム初期化";
+            msg.textContent = "すべてのパスワード、すべてのデータを消去して工場出荷時の状態に戻します。よろしいですか？";
+            btn.textContent = "初期化を実行";
+            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
+
+            btn.onclick = () => {
+                msg.textContent = "【最終確認】全ユーザーのデータが失われます。";
+                btn.textContent = "確定";
+                btn.onclick = () => {
+                    showToast("初期化中...");
+                    if (db) { db.close(); db = null; }
+                    const req = indexedDB.deleteDatabase(DB_NAME);
+                    req.onsuccess = () => { showToast("完了。再起動..."); setTimeout(() => location.reload(), 1500); };
+                    req.onerror = () => { showToast("失敗しました。"); initDB(); };
+                };
+            };
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); deleteTargetIds = []; }
         function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
         function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('opacity-0', 'translate-y-28'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-28'), 3000); }
         async function updateStorageUsage() {
