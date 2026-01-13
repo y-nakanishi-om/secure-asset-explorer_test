@@ -196,51 +196,46 @@
                     </div>
                 </div>
 
-                <!-- Action Panel (Single Row Layout) -->
+                <!-- Action Panel -->
                 <div class="flex flex-nowrap items-center justify-center gap-3 lg:gap-6 flex-1 overflow-hidden">
-                    
-                    <!-- Group 1: Storage IO -->
+                    <!-- IO Actions -->
                     <div id="ioActions" class="flex flex-nowrap items-center gap-1.5 shrink-0">
                         <span id="fileCount" class="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden lg:inline mr-2">登録数: 0</span>
-                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="importFullBackup(this)">
+                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="initiateImport(this)">
                         <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">読込</button>
                         <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">書込</button>
                     </div>
 
-                    <!-- Divider -->
                     <div class="h-6 w-px bg-slate-800 shrink-0"></div>
 
-                    <!-- Main Group: Add / Play / Select -->
+                    <!-- Manage Actions -->
                     <div class="flex flex-nowrap items-center gap-2 shrink-0">
-                        <button id="addBtn" onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg">追加</button>
-                        
-                        <!-- Direct Play: If select is on, plays selected. If off, plays all. -->
-                        <button id="mainPlayBtn" onclick="handlePlayClick()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg">再生</button>
-                        
-                        <!-- Select Mode Toggle: Purely for preparation/deletion -->
+                        <button id="addBtn" onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black shadow-lg">追加</button>
                         <button onclick="toggleSelectMode()" id="deleteModeBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">選択</button>
                     </div>
 
-                    <!-- Divider -->
                     <div id="selectDivider" class="h-6 w-px bg-slate-800 shrink-0 hidden"></div>
 
-                    <!-- Selection-only Bulk Actions -->
+                    <!-- Bulk Actions -->
                     <div id="selectActions" class="flex flex-nowrap items-center gap-2 hidden shrink-0">
                         <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除</button>
                         <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-300 border border-slate-700 hidden lg:block">全選択</button>
                     </div>
 
-                    <!-- Divider -->
                     <div class="h-6 w-px bg-slate-800 shrink-0"></div>
 
-                    <!-- Sort -->
-                    <div id="sortActions" class="shrink-0">
-                        <select id="sortSelect" onchange="renderGrid()" class="custom-select">
-                            <option value="reg_desc">登録順(新)</option>
-                            <option value="reg_asc">登録順(古)</option>
-                            <option value="file_desc">更新日(新)</option>
-                            <option value="file_asc">更新日(古)</option>
-                        </select>
+                    <!-- Sort & Play Group -->
+                    <div class="flex flex-nowrap items-center gap-3 shrink-0">
+                        <div id="sortActions" class="shrink-0">
+                            <select id="sortSelect" onchange="renderGrid()" class="custom-select">
+                                <option value="reg_desc">登録順(新)</option>
+                                <option value="reg_asc">登録順(古)</option>
+                                <option value="file_desc">更新日(新)</option>
+                                <option value="file_asc">更新日(古)</option>
+                            </select>
+                        </div>
+                        <div class="h-6 w-px bg-slate-800 shrink-0"></div>
+                        <button id="mainPlayBtn" onclick="handlePlayClick()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black shadow-lg">再生</button>
                     </div>
                 </div>
 
@@ -256,9 +251,9 @@
                     </div>
 
                     <div class="flex gap-1 border-l border-slate-800 pl-3">
-                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="枠内最大化"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
-                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
-                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
+                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="最大化"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
+                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ロック"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
                     </div>
                 </div>
             </div>
@@ -270,9 +265,9 @@
         </button>
     </div>
 
-    <!-- Lightbox (Zoomed View) -->
+    <!-- Lightbox -->
     <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
-        <div id="lightboxControls" class="lightbox-controls">
+        <div id="lightboxControls" class="lightbox-controls idle">
             <div class="controls-inner">
                 <div class="zoom-group">
                     <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
@@ -301,12 +296,25 @@
 
     <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-[3rem] p-10 shadow-2xl text-center">
+        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center">
             <h3 id="confirmTitle" class="text-2xl font-black text-white mb-4 uppercase italic">確認</h3>
             <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">メッセージ</p>
             <div class="flex gap-4">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-5 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
                 <button id="confirmBtn" class="flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal (Password verification for migration) -->
+    <div id="importModal" class="fixed inset-0 z-[301] hidden flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center">
+            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">データの復元</h3>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">取り込むデータのパスワードを入力してください。<br><span class="text-indigo-400 text-xs font-bold">現在の環境に合わせて安全に変換されます</span></p>
+            <input type="password" id="importPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-5 mb-6 text-center text-white focus:border-indigo-500 outline-none shadow-inner" placeholder="PASSWORD">
+            <div class="flex gap-4">
+                <button onclick="cancelImport()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl hover:bg-slate-700 transition-all">戻る</button>
+                <button id="executeImportBtn" class="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-xl">変換開始</button>
             </div>
         </div>
     </div>
@@ -329,13 +337,15 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-        const DB_NAME = "AssetStorage_Final_v4";
+        const DB_NAME = "AssetStorage_MultiUser_v5";
         const STORE_NAME = "assets";
         const CONFIG_STORE = "config";
-        let db = null, library = [], currentIdx = -1, sessionKey = null, deleteTargetIds = [];
+        
+        let db = null, library = [], currentIdx = -1, sessionKey = null, currentUserId = null, deleteTargetIds = [];
         let isSelectMode = false, selectedIds = new Set();
         let currentPDF = null, currentZoom = 1, uiScale = 1.0, currentRotation = 0;
         let controlsTimer = null; 
+        let pendingImportData = null;
 
         // Slideshow
         let isSlideshowPlaying = false;
@@ -352,7 +362,8 @@
             const request = indexedDB.open(DB_NAME, 1);
             request.onupgradeneeded = e => {
                 const database = e.target.result;
-                database.createObjectStore(STORE_NAME, { keyPath: "id" });
+                const assetStore = database.createObjectStore(STORE_NAME, { keyPath: "id" });
+                assetStore.createIndex("ownerId", "ownerId", { unique: false });
                 database.createObjectStore(CONFIG_STORE, { keyPath: "key" });
             };
             request.onsuccess = e => { db = e.target.result; };
@@ -379,28 +390,47 @@
             if (pass.length < 4) { showToast("パスワードが短すぎます"); return; }
             
             showToast("認証中...");
+            const userHash = CryptoJS.SHA256(pass).toString();
+            const configKey = "vault_config_" + userHash;
+            
             const tx = db.transaction(CONFIG_STORE, "readwrite");
             const configStore = tx.objectStore(CONFIG_STORE);
-            let saltObj = await new Promise(r => { const req = configStore.get("system_salt"); req.onsuccess = () => r(req.result); });
-            let challengeObj = await new Promise(r => { const req = configStore.get("auth_challenge"); req.onsuccess = () => r(req.result); });
             
-            if (!saltObj) {
-                const newSalt = CryptoJS.lib.WordArray.random(128/8).toString();
-                saltObj = { key: "system_salt", value: newSalt };
-                configStore.put(saltObj);
-            }
+            let userConfig = await new Promise(r => { 
+                const req = configStore.get(configKey); 
+                req.onsuccess = () => r(req.result); 
+            });
             
-            const derived = await deriveKey(pass, saltObj.value);
-            if (challengeObj) {
-                const testResult = decryptWithKey(challengeObj.value, challengeObj.iv, derived);
-                if (testResult !== "OK") { showToast("パスワードが正しくありません"); passEl.value = ""; return; }
-            } else {
+            let salt, derived;
+            
+            if (!userConfig) {
+                salt = CryptoJS.lib.WordArray.random(128/8).toString();
+                derived = await deriveKey(pass, salt);
                 const iv = CryptoJS.lib.WordArray.random(128/8);
                 const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
-                configStore.put({ key: "auth_challenge", value: encryptedChallenge, iv: iv.toString() });
+                
+                userConfig = { 
+                    key: configKey, 
+                    salt: salt, 
+                    challenge: encryptedChallenge, 
+                    iv: iv.toString() 
+                };
+                configStore.put(userConfig);
+                showToast("新しい環境を作成しました");
+            } else {
+                salt = userConfig.salt;
+                derived = await deriveKey(pass, salt);
+                const testResult = decryptWithKey(userConfig.challenge, userConfig.iv, derived);
+                if (testResult !== "OK") { 
+                    showToast("パスワードが正しくありません"); 
+                    passEl.value = ""; 
+                    return; 
+                }
             }
             
             sessionKey = derived;
+            currentUserId = userHash;
+            
             passEl.value = "";
             document.getElementById('authOverlay').style.display = 'none';
             const main = document.getElementById('mainContent');
@@ -414,60 +444,12 @@
             }, 100);
         }
 
-        function requestSystemReset() {
-            const modal = document.getElementById('confirmModal');
-            const title = document.getElementById('confirmTitle');
-            const msg = document.getElementById('confirmMessage');
-            const btn = document.getElementById('confirmBtn');
-
-            title.textContent = "システム初期化";
-            msg.textContent = "保存されているすべてのデータとパスワードを消去し、初期状態に戻します。この操作は取り消せません。よろしいですか？";
-            btn.textContent = "初期化を実行";
-            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
-
-            btn.onclick = () => {
-                msg.textContent = "【最終確認】本当にすべて消去されます。よろしいですか？";
-                btn.textContent = "確定";
-                
-                btn.onclick = () => {
-                    showToast("初期化中...");
-                    if (db) { db.close(); db = null; }
-                    const req = indexedDB.deleteDatabase(DB_NAME);
-                    req.onsuccess = () => { showToast("完了。再起動します。"); setTimeout(() => location.reload(), 1500); };
-                    req.onerror = () => { showToast("初期化に失敗しました。"); initDB(); };
-                    req.onblocked = () => { showToast("他のタブで開いているため実行できません"); };
-                };
-            };
-            modal.classList.remove('hidden');
-        }
-
-        async function updateStorageUsage() {
-            if (navigator.storage && navigator.storage.estimate) {
-                try {
-                    const estimate = await navigator.storage.estimate();
-                    const usage = estimate.usage || 0;
-                    const quota = estimate.quota || 0;
-                    const usedMB = (usage / (1024 * 1024)).toFixed(1);
-                    const availableGB = ((quota - usage) / (1024 * 1024 * 1024)).toFixed(1);
-                    const usageEl = document.getElementById('storageUsage');
-                    if (usageEl) usageEl.textContent = `USED: ${usedMB}MB / FREE: ${availableGB}GB`;
-                } catch(e) {}
-            }
-        }
-
-        async function loadFromDB() {
-            if (!db || !sessionKey) return;
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const data = await new Promise(r => { const req = tx.objectStore(STORE_NAME).getAll(); req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
-            library = data;
-            renderGrid();
-        }
-
         function decryptWithKey(cipherText, ivHex, key) {
             try {
                 const iv = CryptoJS.enc.Hex.parse(ivHex);
                 const bytes = CryptoJS.AES.decrypt(cipherText, key, { iv: iv });
-                return bytes.toString(CryptoJS.enc.Utf8) || null;
+                const result = bytes.toString(CryptoJS.enc.Utf8);
+                return result || null;
             } catch(e) { return null; }
         }
 
@@ -487,6 +469,112 @@
             } catch(e) { return null; }
         }
 
+        function initiateImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const rd = new FileReader();
+            rd.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.assets || !data.config) throw new Error("形式が違います");
+                    pendingImportData = data;
+                    document.getElementById('importModal').classList.remove('hidden');
+                    const passIn = document.getElementById('importPassword');
+                    passIn.value = "";
+                    passIn.focus();
+                    
+                    document.getElementById('executeImportBtn').onclick = () => runMigrationImport();
+                } catch (err) {
+                    showToast("読み込み失敗: ファイル形式が違います");
+                }
+            };
+            rd.readAsText(file);
+            input.value = ""; 
+        }
+
+        function cancelImport() {
+            document.getElementById('importModal').classList.add('hidden');
+            pendingImportData = null;
+        }
+
+        async function runMigrationImport() {
+            const importPass = document.getElementById('importPassword').value;
+            if (!importPass) { showToast("パスワードを入力してください"); return; }
+            
+            const btn = document.getElementById('executeImportBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "変換中...";
+            
+            try {
+                const oldConfig = pendingImportData.config;
+                const oldKey = await deriveKey(importPass, oldConfig.salt);
+                
+                const verify = decryptWithKey(oldConfig.challenge, oldConfig.iv, oldKey);
+                if (verify !== "OK") {
+                    showToast("バックアップのパスワードが違います");
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+
+                showToast("再暗号化中...");
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const assetStore = tx.objectStore(STORE_NAME);
+                
+                let count = 0;
+                for (const item of pendingImportData.assets) {
+                    const migrateField = (field) => {
+                        if (!field) return "";
+                        const p = field.split(":");
+                        const plain = decryptWithKey(p[1], p[0], oldKey);
+                        if (plain === null) return null;
+                        return encrypt(plain);
+                    };
+
+                    const newAsset = {
+                        id: generateId(),
+                        ownerId: currentUserId,
+                        name: migrateField(item.name),
+                        type: migrateField(item.type),
+                        size: migrateField(item.size),
+                        thumbnail: migrateField(item.thumbnail),
+                        data: migrateField(item.data),
+                        timestamp: item.timestamp || Date.now(),
+                        fileModified: migrateField(item.fileModified)
+                    };
+
+                    if (newAsset.data !== null) {
+                        assetStore.put(newAsset);
+                        count++;
+                    }
+                }
+
+                tx.oncomplete = () => {
+                    document.getElementById('importModal').classList.add('hidden');
+                    showToast(`${count}件を現在の環境に統合しました`);
+                    setTimeout(() => location.reload(), 1500);
+                };
+            } catch (e) {
+                showToast("エラーが発生しました");
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function loadFromDB() {
+            if (!db || !sessionKey || !currentUserId) return;
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const index = tx.objectStore(STORE_NAME).index("ownerId");
+            const data = await new Promise(r => { 
+                const req = index.getAll(currentUserId); 
+                req.onsuccess = () => r(req.result); 
+                req.onerror = () => r([]); 
+            });
+            library = data;
+            renderGrid();
+        }
+
         function getSortedLibrary() {
             const sortVal = document.getElementById('sortSelect').value;
             let sortedList = [...library];
@@ -494,8 +582,6 @@
             else if (sortVal === 'reg_asc') sortedList.sort((a, b) => a.timestamp - b.timestamp);
             else if (sortVal === 'file_desc') sortedList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
             else if (sortVal === 'file_asc') sortedList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
-            else if (sortVal === 'name_asc') sortedList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
-            else if (sortVal === 'name_desc') sortedList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
             return sortedList;
         }
 
@@ -504,9 +590,8 @@
             grid.innerHTML = '';
             
             if (library.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">No assets found</p></div>`;
-                const fc = document.getElementById('fileCount');
-                if (fc) fc.textContent = `登録数: 0`;
+                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">コンテンツがありません</p></div>`;
+                if (document.getElementById('fileCount')) document.getElementById('fileCount').textContent = `登録数: 0`;
                 return;
             }
 
@@ -515,7 +600,7 @@
                 const card = document.createElement('div');
                 const isSelected = selectedIds.has(item.id);
                 card.className = `asset-card group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl cursor-pointer ${isSelected ? 'selected' : ''}`;
-                const name = decrypt(item.name) || "ENCRYPTED DATA";
+                const name = decrypt(item.name) || "暗号化データ";
                 const thumb = decrypt(item.thumbnail);
                 
                 card.innerHTML = `
@@ -524,7 +609,7 @@
                         ${isSelectMode ? `<div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}"><svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>` : ''}
                     </div>
                     <div class="aspect-[4/5] w-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
-                        <img src="${thumb || ''}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">
+                        ${thumb ? `<img src="${thumb}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">` : `<div class="text-slate-700"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>`}
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none"></div>
                     </div>
                     <div class="p-4 border-t border-slate-800/50 text-center bg-slate-900"><p class="text-[10px] font-black text-slate-100 truncate tracking-tight uppercase">${name}</p></div>
@@ -548,13 +633,11 @@
                         document.getElementById('confirmTitle').textContent = "資産の削除";
                         document.getElementById('confirmMessage').textContent = "この資産を完全に削除します。";
                         const btn = document.getElementById('confirmBtn');
-                        btn.textContent = "削除実行";
                         btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
                         btn.onclick = async () => {
                             const tx = db.transaction(STORE_NAME, "readwrite");
-                            const store = tx.objectStore(STORE_NAME);
-                            deleteTargetIds.forEach(id => store.delete(id));
-                            tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
+                            tx.objectStore(STORE_NAME).delete(deleteTargetIds[0]);
+                            tx.oncomplete = () => { closeConfirm(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
                         };
                         modal.classList.remove('hidden');
                     };
@@ -565,40 +648,40 @@
             if (fc) fc.textContent = `登録数: ${library.length}`;
         }
 
-        // --- Improved UX: Separate preparation (Select) and execution (Play) ---
+        async function exportFullBackup() {
+            const btn = document.getElementById('exportBtn'); 
+            if(btn) btn.textContent = "処理中...";
+            try {
+                const tx = db.transaction(CONFIG_STORE, "readonly");
+                const configKey = "vault_config_" + currentUserId;
+                const userConfig = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get(configKey); req.onsuccess = () => r(req.result); });
+                
+                const backupData = { 
+                    version: "MultiUser-v5", 
+                    userId: currentUserId,
+                    config: userConfig, 
+                    assets: library 
+                };
+                const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `vault-export-user-${new Date().toISOString().split('T')[0]}.json`; 
+                a.click();
+                showToast("バックアップを作成しました");
+            } catch (e) { showToast("書き出し失敗"); } finally { if(btn) btn.textContent = "書込"; }
+        }
+
         function toggleSelectMode() {
             isSelectMode = !isSelectMode;
             if (!isSelectMode) selectedIds.clear();
-            
-            // Toggle visibility to keep it in 1 row
             document.getElementById('ioActions').classList.toggle('hidden', isSelectMode);
-            document.getElementById('sortActions').classList.toggle('hidden', isSelectMode);
+            document.getElementById('sortActions').parentNode.classList.toggle('hidden', isSelectMode);
             document.getElementById('addBtn').classList.toggle('hidden', isSelectMode);
             document.getElementById('selectDivider').classList.toggle('hidden', !isSelectMode);
             document.getElementById('selectActions').classList.toggle('hidden', !isSelectMode);
-            
             const delModeBtn = document.getElementById('deleteModeBtn');
-            if (isSelectMode) {
-                delModeBtn.classList.remove('bg-slate-800');
-                delModeBtn.classList.add('bg-indigo-900', 'ring-2', 'ring-indigo-500');
-                delModeBtn.textContent = "戻る";
-            } else {
-                delModeBtn.classList.remove('bg-indigo-900', 'ring-2', 'ring-indigo-500');
-                delModeBtn.classList.add('bg-slate-800');
-                delModeBtn.textContent = "選択";
-            }
-
+            delModeBtn.textContent = isSelectMode ? "解除" : "選択";
             updateBulkDeleteCount();
             renderGrid();
-        }
-
-        // Play Button logic: Direct playback.
-        function handlePlayClick() {
-            // Start slideshow. If selected items exist, play them. Otherwise play all.
-            startSlideshow(selectedIds.size > 0);
-            
-            // If select mode was on, turn it off upon playing
-            if (isSelectMode) toggleSelectMode();
         }
 
         function toggleSelectAll() {
@@ -620,7 +703,6 @@
             document.getElementById('confirmTitle').textContent = "一括削除";
             document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件の資産を完全に削除します。`;
             const btn = document.getElementById('confirmBtn');
-            btn.textContent = "選択した項目を削除";
             btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
             btn.onclick = async () => {
                 const tx = db.transaction(STORE_NAME, "readwrite");
@@ -632,7 +714,8 @@
         }
 
         async function handleFiles(fileList) {
-            if (!sessionKey) return;
+            if (!sessionKey || !currentUserId) return;
+            if (fileList.length === 0) return;
             showToast("処理中...");
             for (const file of Array.from(fileList)) {
                 try {
@@ -652,11 +735,22 @@
                         thumbData = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
                     }
                     const base64 = await new Promise(r => { const rd = new FileReader(); rd.onload = e => r(e.target.result); rd.readAsDataURL(file); });
-                    const secureItem = { id: generateId(), name: encrypt(file.name), type: encrypt(type), size: encrypt((file.size/1024/1024).toFixed(2) + " MB"), thumbnail: encrypt(thumbData), data: encrypt(base64), timestamp: Date.now(), fileModified: encrypt(file.lastModified.toString()) };
+                    
+                    const secureItem = { 
+                        id: generateId(), 
+                        ownerId: currentUserId,
+                        name: encrypt(file.name), 
+                        type: encrypt(type), 
+                        size: encrypt((file.size/1024/1024).toFixed(2) + " MB"), 
+                        thumbnail: encrypt(thumbData), 
+                        data: encrypt(base64), 
+                        timestamp: Date.now(), 
+                        fileModified: encrypt(file.lastModified.toString()) 
+                    };
                     const tx = db.transaction(STORE_NAME, "readwrite");
                     tx.objectStore(STORE_NAME).put(secureItem);
                     await new Promise(r => tx.oncomplete = r);
-                } catch (err) { showToast("エラーが発生しました"); }
+                } catch (err) { console.error(err); }
             }
             showToast("完了しました");
             if (!document.getElementById('uploadModal').classList.contains('hidden')) toggleUploadModal();
@@ -664,29 +758,111 @@
             updateStorageUsage();
         }
 
-        function wakeControls() {
-            const ctrl = document.getElementById('lightboxControls');
-            if (!ctrl) return;
-            ctrl.classList.remove('idle');
-            clearTimeout(controlsTimer);
-            controlsTimer = setTimeout(() => {
-                ctrl.classList.add('idle');
-            }, 2000); 
+        async function openLightbox(index, list) {
+            if (!list || list.length === 0) return;
+            currentIdx = index;
+            const item = list[index];
+            const lb = document.getElementById('lightbox');
+            const container = document.getElementById('zoomWrapper');
+            const loader = document.getElementById('mediaLoader');
+            const mc = document.getElementById('mediaContainer');
+            
+            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
+            loader.style.display = 'flex';
+            container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
+            mc.scrollTop = 0; mc.scrollLeft = 0;
+            currentZoom = 1; currentRotation = 0; currentPDFPageIdx = 1;
+            lb.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            if (!isSlideshowPlaying) wakeControls();
+            
+            const decryptedData = decrypt(item.data), type = decrypt(item.type);
+            if (!decryptedData) { showToast("復号失敗"); loader.style.display = 'none'; return; }
+            
+            if (type === 'image') {
+                const img = new Image(); 
+                img.src = decryptedData; 
+                img.onload = () => { loader.style.display = 'none'; applyZoom(); }; 
+                container.appendChild(img);
+            } else {
+                try {
+                    const bin = atob(decryptedData.split(',')[1]);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    currentPDF = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: true }).promise;
+                    const wrapper = document.createElement('div'); 
+                    wrapper.className = 'pdf-canvas-container'; 
+                    container.appendChild(wrapper);
+                    const dpr = window.devicePixelRatio || 1;
+                    for (let i = 1; i <= currentPDF.numPages; i++) {
+                        const page = await currentPDF.getPage(i);
+                        const ovp = page.getViewport({ scale: 1 });
+                        const scale = Math.max((mc.clientWidth * 0.9) / ovp.width, 1);
+                        const vp = page.getViewport({ scale: scale * dpr });
+                        const canvas = document.createElement('canvas');
+                        canvas.className = 'pdf-page-canvas';
+                        canvas.height = vp.height; canvas.width = vp.width;
+                        canvas.style.width = (vp.width / dpr) + "px"; 
+                        canvas.style.height = (vp.height / dpr) + "px";
+                        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
+                        wrapper.appendChild(canvas);
+                        if (i === 1) loader.style.display = 'none';
+                    }
+                    applyZoom();
+                } catch (e) { loader.style.display = 'none'; showToast("PDF描画失敗"); }
+            }
         }
 
-        function startSlideshow(onlySelected = false) {
-            const fullList = getSortedLibrary();
-            if (onlySelected && selectedIds.size > 0) {
-                slideshowList = fullList.filter(item => selectedIds.has(item.id));
-            } else {
-                slideshowList = fullList;
-            }
+        function zoomContent(factor) {
+            wakeControls();
+            if (isSlideshowPlaying) toggleSlideshow();
+            const mc = document.getElementById('mediaContainer');
+            const wrapper = document.getElementById('zoomWrapper');
+            const centerX = (mc.scrollLeft + mc.clientWidth/2) / wrapper.scrollWidth;
+            const centerY = (mc.scrollTop + mc.clientHeight/2) / wrapper.scrollHeight;
             
-            if (slideshowList.length === 0) {
-                showToast("再生可能なコンテンツがありません");
-                return;
-            }
+            currentZoom = Math.min(Math.max(currentZoom * factor, 0.5), 10);
+            applyZoom();
+            
+            requestAnimationFrame(() => {
+                mc.scrollLeft = (centerX * wrapper.scrollWidth) - (mc.clientWidth/2);
+                mc.scrollTop = (centerY * wrapper.scrollHeight) - (mc.clientHeight/2);
+            });
+        }
 
+        function rotateContent() {
+            wakeControls();
+            currentRotation = (currentRotation + 90) % 360;
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1; currentRotation = 0; applyZoom();
+            const mc = document.getElementById('mediaContainer');
+            if (mc) { mc.scrollLeft = 0; mc.scrollTop = 0; }
+        }
+
+        function applyZoom() {
+            const wrapper = document.getElementById('zoomWrapper');
+            const mc = document.getElementById('mediaContainer');
+            if (wrapper && mc) {
+                wrapper.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
+                const isOverflow = (wrapper.offsetHeight * currentZoom > mc.clientHeight) || (wrapper.offsetWidth * currentZoom > mc.clientWidth);
+                mc.style.alignItems = (isOverflow || currentZoom > 1) ? 'flex-start' : 'center';
+                mc.style.justifyContent = (isOverflow || currentZoom > 1) ? 'flex-start' : 'center';
+            }
+        }
+
+        function handlePlayClick() {
+            startSlideshow(selectedIds.size > 0);
+            if (isSelectMode) toggleSelectMode();
+        }
+
+        function startSlideshow(onlySelected) {
+            const list = getSortedLibrary();
+            slideshowList = onlySelected ? list.filter(item => selectedIds.has(item.id)) : list;
+            if (slideshowList.length === 0) return showToast("再生可能な項目がありません");
             isSlideshowPlaying = true;
             openLightbox(0, slideshowList);
             updateSlideshowUI();
@@ -704,287 +880,108 @@
             updateSlideshowUI();
         }
 
+        function resetSlideshowTimer() {
+            stopSlideshowTimer();
+            if (!isSlideshowPlaying) return;
+            const pb = document.getElementById('progressBar');
+            slideshowProgressInterval = setInterval(() => {
+                slideTimeElapsed += 100;
+                if (pb) pb.style.width = Math.min((slideTimeElapsed / SLIDE_DURATION) * 100, 100) + '%';
+            }, 100);
+            slideshowTimer = setTimeout(advanceSlideshow, SLIDE_DURATION);
+        }
+
         function stopSlideshowTimer() {
             clearTimeout(slideshowTimer);
             clearInterval(slideshowProgressInterval);
             slideTimeElapsed = 0;
-            const pb = document.getElementById('progressBar');
-            if (pb) pb.style.width = '0%';
-        }
-
-        function resetSlideshowTimer() {
-            stopSlideshowTimer();
-            if (!isSlideshowPlaying) return;
-
-            const updateInterval = 100; 
-            slideshowProgressInterval = setInterval(() => {
-                slideTimeElapsed += updateInterval;
-                const progress = (slideTimeElapsed / SLIDE_DURATION) * 100;
-                const pb = document.getElementById('progressBar');
-                if (pb) pb.style.width = Math.min(progress, 100) + '%';
-            }, updateInterval);
-
-            slideshowTimer = setTimeout(() => { advanceSlideshow(); }, SLIDE_DURATION);
+            if (document.getElementById('progressBar')) document.getElementById('progressBar').style.width = '0%';
         }
 
         async function advanceSlideshow() {
             if (currentPDF && currentPDFPageIdx < currentPDF.numPages) {
                 currentPDFPageIdx++;
                 const mc = document.getElementById('mediaContainer');
-                const canvases = document.querySelectorAll('.pdf-page-canvas');
-                if (canvases[currentPDFPageIdx - 1]) {
-                    mc.scrollTo({
-                        top: canvases[currentPDFPageIdx - 1].offsetTop - 40,
-                        behavior: 'smooth'
-                    });
-                }
+                const canvas = document.querySelectorAll('.pdf-page-canvas')[currentPDFPageIdx-1];
+                if (canvas) mc.scrollTo({ top: canvas.offsetTop - 40, behavior: 'smooth' });
                 resetSlideshowTimer();
                 return;
             }
-
             currentPDFPageIdx = 1;
-            const nextIdx = (currentIdx + 1) % slideshowList.length;
-            await openLightbox(nextIdx, slideshowList);
+            currentIdx = (currentIdx + 1) % slideshowList.length;
+            await openLightbox(currentIdx, slideshowList);
             resetSlideshowTimer();
         }
 
         function updateSlideshowUI() {
-            const btn = document.getElementById('slideshowBtn');
-            const playIcon = document.getElementById('playIcon');
-            const pauseIcon = document.getElementById('pauseIcon');
-            if (isSlideshowPlaying) {
-                btn.classList.add('active');
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
-            } else {
-                btn.classList.remove('active');
-                playIcon.classList.remove('hidden');
-                pauseIcon.classList.add('hidden');
-            }
+            document.getElementById('playIcon').classList.toggle('hidden', isSlideshowPlaying);
+            document.getElementById('pauseIcon').classList.toggle('hidden', !isSlideshowPlaying);
+            document.getElementById('slideshowBtn').classList.toggle('active', isSlideshowPlaying);
         }
 
-        async function openLightbox(index, sortedList = null) {
-            const list = sortedList || getSortedLibrary();
-            if (list.length === 0) return;
-            if (index < 0 || index >= list.length) index = 0;
-            currentIdx = index;
-
-            const item = list[index], container = document.getElementById('zoomWrapper'), loader = document.getElementById('mediaLoader'), lb = document.getElementById('lightbox'), mc = document.getElementById('mediaContainer');
-            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
-            
-            loader.style.display = 'flex';
-            container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
-            
-            mc.scrollTop = 0; mc.scrollLeft = 0;
-            mc.style.alignItems = 'center';
-            currentZoom = 1;
-            currentRotation = 0;
-            currentPDFPageIdx = 1; 
-            
-            lb.classList.remove('hidden'); 
-            document.body.style.overflow = 'hidden';
-            
-            wakeControls();
-            
-            const decryptedData = decrypt(item.data), type = decrypt(item.type);
-            if (!decryptedData) { showToast("復号に失敗しました"); loader.style.display = 'none'; return; }
-            
-            if (type === 'image') {
-                const img = new Image(); 
-                img.src = decryptedData; 
-                img.onload = () => { 
-                    loader.style.display = 'none'; 
-                    initZoomDimensions();
-                    applyZoom();
-                }; 
-                container.appendChild(img);
-            } else {
-                try {
-                    const bin = atob(decryptedData.split(',')[1]);
-                    const bytes = new Uint8Array(bin.length);
-                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                    currentPDF = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: true }).promise;
-                    
-                    const wrapper = document.createElement('div'); 
-                    wrapper.className = 'pdf-canvas-container'; 
-                    container.appendChild(wrapper);
-                    
-                    const dpr = window.devicePixelRatio || 1;
-                    for (let i = 1; i <= currentPDF.numPages; i++) {
-                        const page = await currentPDF.getPage(i);
-                        const ovp = page.getViewport({ scale: 1 });
-                        const scale = Math.max((mc.clientWidth * 0.9) / ovp.width, 1);
-                        const vp = page.getViewport({ scale: scale * dpr });
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'pdf-page-canvas';
-                        canvas.height = vp.height; canvas.width = vp.width;
-                        canvas.style.width = (vp.width / dpr) + "px"; 
-                        canvas.style.height = (vp.height / dpr) + "px";
-                        
-                        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
-                        wrapper.appendChild(canvas);
-                        
-                        if (i === 1) loader.style.display = 'none';
-                    }
-                    
-                    initZoomDimensions();
-                    applyZoom();
-                    mc.scrollTop = 0; 
-                } catch (e) { loader.style.display = 'none'; showToast("描画失敗"); }
-            }
-        }
-
-        function initZoomDimensions() {
-            const mc = document.getElementById('mediaContainer');
-            const wrapper = document.getElementById('zoomWrapper');
-            if (wrapper && mc) { wrapper.style.width = '100%'; wrapper.style.height = 'auto'; }
-        }
-
-        function zoomContent(factor) {
-            wakeControls();
-            if (isSlideshowPlaying) toggleSlideshow(); 
-            const mc = document.getElementById('mediaContainer');
-            const wrapper = document.getElementById('zoomWrapper');
-            if (!wrapper) return;
-            const prevZoom = currentZoom;
-            currentZoom *= factor;
-            currentZoom = Math.min(Math.max(currentZoom, 0.5), 10);
-            const centerX_Ratio = (mc.scrollLeft + mc.clientWidth / 2) / wrapper.scrollWidth;
-            const centerY_Ratio = (mc.scrollTop + mc.clientHeight / 2) / wrapper.scrollHeight;
-            applyZoom();
-            requestAnimationFrame(() => {
-                mc.scrollLeft = (centerX_Ratio * wrapper.scrollWidth) - (mc.clientWidth / 2);
-                mc.scrollTop = (centerY_Ratio * wrapper.scrollHeight) - (mc.clientHeight / 2);
-            });
-        }
-
-        function rotateContent() {
-            wakeControls();
-            if (isSlideshowPlaying) toggleSlideshow();
-            currentRotation = (currentRotation + 90) % 360;
-            applyZoom();
-        }
-
-        function resetZoom() {
-            wakeControls();
-            currentZoom = 1; currentRotation = 0; applyZoom();
-            const mc = document.getElementById('mediaContainer');
-            if (mc) { mc.scrollLeft = 0; mc.scrollTop = 0; }
-        }
-
-        function applyZoom() {
-            const wrapper = document.getElementById('zoomWrapper');
-            const mc = document.getElementById('mediaContainer');
-            if (wrapper && mc) {
-                wrapper.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
-                const isOverflowing = (wrapper.offsetHeight * currentZoom > mc.clientHeight) || (wrapper.offsetWidth * currentZoom > mc.clientWidth);
-                if (isOverflowing || currentZoom > 1.0) {
-                    mc.style.alignItems = 'flex-start'; mc.style.justifyContent = 'flex-start';
-                } else {
-                    mc.style.alignItems = 'center'; mc.style.justifyContent = 'center';
-                }
-            }
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenEnabled) { showToast("全画面表示が許可されていません"); toggleFocusMode(); return; }
-            try { if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } } catch (err) {}
-        }
-
-        function toggleFocusMode() { document.body.classList.toggle('hide-header'); window.dispatchEvent(new Event('resize')); }
-
-        async function lockVault() {
-            if (isSlideshowPlaying) toggleSlideshow();
-            sessionKey = null; library = []; currentIdx = -1; selectedIds.clear(); isSelectMode = false;
-            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
-            const main = document.getElementById('mainContent');
-            main.classList.remove('opacity-100', 'hide-header');
-            main.classList.add('opacity-0');
-            setTimeout(() => {
-                main.classList.add('hidden');
-                document.getElementById('authOverlay').style.display = 'flex';
-                document.getElementById('fileGrid').innerHTML = '';
-                showToast("ロック完了");
-            }, 500);
-        }
-
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); deleteTargetIds = []; }
-        
-        async function exportFullBackup() {
-            const btn = document.getElementById('exportBtn'); if(btn) btn.textContent = "処理中...";
-            try {
-                const tx = db.transaction(CONFIG_STORE, "readonly");
-                const saltObj = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get("system_salt"); req.onsuccess = () => r(req.result); });
-                const challengeObj = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get("auth_challenge"); req.onsuccess = () => r(req.result); });
-                const backupData = { version: "Final", salt: saltObj?.value, challenge: challengeObj, assets: library };
-                const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = `vault-export-${new Date().toISOString().split('T')[0]}.json`; a.click();
-                showToast("保存完了");
-            } catch (e) { showToast("失敗"); } finally { if(btn) btn.textContent = "書込"; }
-        }
-
-        async function importFullBackup(input) {
-            const file = input.files[0]; if (!file) return;
-            const rd = new FileReader();
-            rd.onload = async e => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (!data) return;
-                    const txConfig = db.transaction(CONFIG_STORE, "readwrite");
-                    if (data.salt) txConfig.objectStore(CONFIG_STORE).put({ key: "system_salt", value: data.salt });
-                    if (data.challenge) txConfig.objectStore(CONFIG_STORE).put({ key: "auth_challenge", value: data.challenge.value, iv: data.challenge.iv });
-                    await new Promise(r => txConfig.oncomplete = r);
-                    const txAssets = db.transaction(STORE_NAME, "readwrite");
-                    const assetStore = txAssets.objectStore(STORE_NAME);
-                    assetStore.clear();
-                    const assets = data.assets || data;
-                    for (const item of assets) { assetStore.put(item); }
-                    txAssets.oncomplete = () => { showToast("復元完了。再起動..."); setTimeout(() => location.reload(), 1200); };
-                } catch (err) { showToast("読み込み失敗"); }
-            };
-            rd.readAsText(file);
-        }
-
-        function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
-        function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('opacity-0', 'translate-y-28'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-28'), 3000); }
-        
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        if (dropZone) dropZone.onclick = () => fileInput.click();
-        if (fileInput) fileInput.onchange = e => handleFiles(e.target.files);
-        if (dropZone) {
-            dropZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('drag-over'); });
-            dropZone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); });
-            dropZone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('drag-over'); if (sessionKey) handleFiles(e.dataTransfer.files); });
-        }
-        window.addEventListener('dragover', e => e.preventDefault());
-        window.addEventListener('drop', e => e.preventDefault());
-        
         async function closeLightboxUI() {
             if (isSlideshowPlaying) toggleSlideshow();
-            clearTimeout(controlsTimer);
             document.getElementById('lightbox').classList.add('hidden'); 
             document.body.style.overflow = ''; 
             resetZoom();
             if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
         }
 
-        document.getElementById('nextBtn').onclick = (e) => { 
-            e.stopPropagation(); if (isSlideshowPlaying) toggleSlideshow();
-            const sortedList = slideshowList.length > 0 ? slideshowList : getSortedLibrary(); 
-            openLightbox((currentIdx + 1) % sortedList.length, sortedList); 
-        };
-        document.getElementById('prevBtn').onclick = (e) => { 
-            e.stopPropagation(); if (isSlideshowPlaying) toggleSlideshow();
-            const sortedList = slideshowList.length > 0 ? slideshowList : getSortedLibrary(); 
-            openLightbox((currentIdx - 1 + sortedList.length) % sortedList.length, sortedList); 
-        };
+        function wakeControls() {
+            const ctrl = document.getElementById('lightboxControls');
+            ctrl.classList.remove('idle');
+            clearTimeout(controlsTimer);
+            controlsTimer = setTimeout(() => ctrl.classList.add('idle'), 3000);
+        }
+
+        function lockVault() {
+            sessionKey = null; currentUserId = null; library = [];
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('authOverlay').style.display = 'flex';
+            showToast("ロックしました");
+        }
+
+        function toggleFocusMode() { document.body.classList.toggle('hide-header'); }
+        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+        function requestSystemReset() { if(confirm("全システムを初期化します。よろしいですか？")) { indexedDB.deleteDatabase(DB_NAME); location.reload(); } }
+        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
+        function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('opacity-0', 'translate-y-28'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-28'), 3000); }
+        async function updateStorageUsage() {
+            if (navigator.storage && navigator.storage.estimate) {
+                const est = await navigator.storage.estimate();
+                const used = (est.usage / (1024 * 1024)).toFixed(1);
+                const free = ((est.quota - est.usage) / (1024*1024*1024)).toFixed(1);
+                document.getElementById('storageUsage').textContent = `STORAGE: ${used}MB USED / ${free}GB FREE`;
+            }
+        }
+
+        // --- Event Initialization ---
+        document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
+        document.getElementById('fileInput').onchange = e => handleFiles(e.target.files);
+        document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); openLightbox((currentIdx + 1) % library.length, getSortedLibrary()); };
+        document.getElementById('prevBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); openLightbox((currentIdx - 1 + library.length) % library.length, getSortedLibrary()); };
         
-        const mediaContainer = document.getElementById('mediaContainer');
-        ['mousemove', 'touchstart', 'scroll'].forEach(evt => {
-            if (mediaContainer) mediaContainer.addEventListener(evt, wakeControls);
+        // Window Level Drag & Drop for reliability
+        window.addEventListener('dragover', e => { 
+            e.preventDefault(); 
+            if (sessionKey) {
+                const modal = document.getElementById('uploadModal');
+                if (modal.classList.contains('hidden')) toggleUploadModal();
+                document.getElementById('dropZone').classList.add('drag-over');
+            }
+        });
+        window.addEventListener('dragleave', e => { 
+            if (e.relatedTarget === null) {
+                document.getElementById('dropZone').classList.remove('drag-over');
+            }
+        });
+        window.addEventListener('drop', e => { 
+            e.preventDefault(); 
+            document.getElementById('dropZone').classList.remove('drag-over');
+            if (sessionKey) {
+                handleFiles(e.dataTransfer.files);
+            }
         });
 
         window.addEventListener('keydown', e => {
@@ -993,12 +990,9 @@
             if (e.key === 'Escape') closeLightboxUI();
             if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
             if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
-            if (e.key === '+' || e.key === ';') zoomContent(1.25);
-            if (e.key === '-' || e.key === '_') zoomContent(0.8);
-            if (e.key === 'r' || e.key === 'R') rotateContent();
-            if (e.key === ' ' || e.key === 'Enter') toggleSlideshow(); 
-            if (e.key === '0') resetZoom();
+            if (e.key === ' ') toggleSlideshow();
         });
+        ['mousemove', 'touchstart', 'scroll'].forEach(e => document.getElementById('mediaContainer').addEventListener(e, wakeControls));
     </script>
 </body>
 </html>
