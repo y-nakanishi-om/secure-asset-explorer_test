@@ -3,1296 +3,594 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure Asset Explorer - Final Pro Edition</title>
+    <title>Secure Asset Explorer - Lite V6 (JP)</title>
+    <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #020617; color: #e2e8f0; overflow: hidden; }
         
-        :root {
-            --ui-scale: 1.0;
-            --grid-cols: 5;
-        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background-color: #020617; color: #f8fafc; }
-        
-        /* PDF Settings */
-        .pdf-canvas-container { display: flex; flex-direction: column; align-items: center; gap: 32px; padding: 40px 0; width: 100%; background-color: transparent; }
-        .pdf-page-canvas { display: block; max-width: 95%; height: auto !important; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7); background-color: white; border-radius: 12px; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #020617; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; border: 2px solid #020617; }
-        
-        .loader { border: 4px solid rgba(99, 102, 241, 0.1); border-top: 4px solid #6366f1; border-radius: 50%; width: 50px; height: 50px; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .asset-card { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none; position: relative; }
-        .asset-card:hover { transform: translateY(-8px); filter: brightness(1.1); }
-        .asset-card.selected { outline: 4px solid #6366f1; outline-offset: 2px; }
-        
-        .glass-header { 
-            background: rgba(2, 6, 23, 0.95); 
-            backdrop-filter: blur(32px); 
-            -webkit-backdrop-filter: blur(32px); 
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #fileGrid {
-            display: grid;
-            grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
-            gap: 2rem;
-        }
-        @media (max-width: 640px) {
-            #fileGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem; }
-        }
-
-        #mediaContainer { 
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
-            display: flex;
-            align-items: center; 
-            justify-content: center;
-            background: black;
-            position: relative;
+        /* Solid UI (Lightweight) */
+        .solid-panel {
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         
-        #zoomWrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin: auto; 
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: center center;
-            flex-shrink: 0;
-            padding: 40px; 
-            box-sizing: border-box;
-            min-height: 100%;
-        }
-
-        #zoomWrapper img, #zoomWrapper .pdf-canvas-container { margin: auto; flex-shrink: 0; }
-        #mediaContainer img { max-width: 95%; max-height: 90vh; object-fit: contain; display: block; border-radius: 16px; box-shadow: 0 40px 80px rgba(0,0,0,0.8); }
-        
-        .nav-btn {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(-50%);
-        }
-        .nav-btn:hover { background: rgba(99, 102, 241, 0.4); transform: translateY(-50%) scale(1.1); color: white; }
-
-        .hide-header header { transform: translateY(100%); pointer-events: none; }
-        #exitFocusBtn { display: none; }
-        .hide-header #exitFocusBtn { display: flex; }
-
-        .custom-select {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #cbd5e1;
-            font-size: calc(13px * var(--ui-scale));
-            font-weight: 800;
-            padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
-            border-radius: 10px;
-            outline: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .search-input {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: calc(13px * var(--ui-scale));
-            padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
-            border-radius: 10px;
-            outline: none;
-            width: calc(140px * var(--ui-scale));
-            transition: all 0.3s;
-        }
-        .search-input:focus { border-color: #6366f1; width: calc(200px * var(--ui-scale)); background: rgba(15, 23, 42, 0.9); }
-
-        /* Lightbox Controls (Right Side Floating) */
-        .lightbox-controls {
-            position: fixed;
-            right: 2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            padding: 0.75rem;
-            border-radius: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
-            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .lightbox-controls.idle { opacity: 0.15; pointer-events: auto; }
-        .lightbox-controls.idle:hover { opacity: 1; }
-
-        .controls-inner { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
-
-        .zoom-group { display: flex; flex-direction: column; gap: 0.4rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.75rem; }
-
-        .zoom-btn, .close-lightbox-btn {
-            width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center;
-            background: rgba(255, 255, 255, 0.05); color: white; border-radius: 1rem; transition: all 0.2s;
-        }
-        .zoom-btn:active, .close-lightbox-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.2); }
-        .zoom-btn.active { background: rgba(99, 102, 241, 0.4); color: white; }
-        
-        /* Progress Container for Vertical orientation */
-        .progress-container { width: 4px; height: 100px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin: 8px 0; overflow: hidden; }
-        .progress-bar { width: 100%; height: 0%; background: #6366f1; transition: height 0.1s linear; }
-
-        .dynamic-ui-text { font-size: calc(0.95rem * var(--ui-scale)); }
-        .dynamic-ui-btn { 
-            padding: calc(0.6rem * var(--ui-scale)) calc(1rem * var(--ui-scale)); 
-            font-size: calc(0.75rem * var(--ui-scale));
-            border-radius: calc(0.5rem * var(--ui-scale));
-            white-space: nowrap;
-        }
-        .dynamic-ui-icon { 
-            width: calc(2.8rem * var(--ui-scale)); 
-            height: calc(2.8rem * var(--ui-scale)); 
-            border-radius: calc(0.7rem * var(--ui-scale));
-        }
-        .dynamic-ui-icon svg {
-            width: calc(1.6rem * var(--ui-scale));
-            height: calc(1.6rem * var(--ui-scale));
-        }
-
-        /* Grid Slider Styling */
-        .slider-control {
-            appearance: none;
-            width: calc(80px * var(--ui-scale));
-            height: 4px;
+        .floating-panel {
             background: #1e293b;
-            border-radius: 10px;
-            outline: none;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Asset Grid */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+            padding-bottom: 120px;
+        }
+        @media (min-width: 768px) { .asset-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; } }
+
+        .asset-card { 
+            position: relative;
+            background-color: #1e293b; 
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            aspect-ratio: 3/4;
             cursor: pointer;
         }
-        .slider-control::-webkit-slider-thumb {
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #6366f1;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
+        .asset-card.selected { border-color: #6366f1; box-shadow: 0 0 0 2px #6366f1; }
 
-        @keyframes pulse-slow {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(0.98); }
-        }
-        .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-
-        #dropZone.drag-over {
-            border-color: #6366f1;
-            background: rgba(99, 102, 241, 0.1);
-            transform: scale(1.02);
-        }
-
-        /* Shake animation */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-        }
-        .shake { animation: shake 0.2s ease-in-out 0s 2; }
+        /* Viewer */
+        .viewer-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        .viewer-content { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        .toast { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
-<body class="min-h-screen selection:bg-indigo-500/30 overflow-x-hidden">
+<body class="h-screen w-screen flex flex-col text-slate-200">
 
-    <!-- Auth Layer -->
-    <div id="authOverlay" class="fixed inset-0 z-[200] bg-slate-950 flex flex-col items-center justify-center p-8">
-        <div class="w-full max-w-lg mb-12 flex flex-col items-center animate-pulse-slow">
-            <img src="logo.png" alt="Secure Vault" class="w-full max-w-[420px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(79,70,229,0.4)]" onerror="this.src='https://via.placeholder.com/500x200/020617/ffffff?text=SECURE+VAULT'">
-            <div class="w-24 h-1 bg-indigo-600/30 rounded-full mt-8"></div>
-        </div>
-
-        <div id="loginForm" class="w-full max-w-[340px] flex flex-col gap-4">
-            <div class="relative w-full">
-                <input type="password" id="masterPassword" class="w-full bg-slate-900/80 border border-slate-800 rounded-2xl px-6 py-6 text-center text-white text-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" placeholder="PASSWORD" autocomplete="current-password">
-                <p id="loginErrorMsg" class="text-red-500 text-xs font-bold text-center mt-2 h-4 opacity-0 transition-opacity">ログインできません。</p>
-            </div>
-            <button onclick="authenticate()" class="w-full bg-indigo-600 hover:bg-indigo-50 text-white font-black py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] uppercase tracking-[0.2em] text-xl">
-                log in
-            </button>
-            <div class="flex items-center gap-4 my-2">
-                <div class="h-px bg-slate-800 flex-1"></div>
-                <span class="text-slate-600 text-[10px] font-black uppercase tracking-widest">OR</span>
-                <div class="h-px bg-slate-800 flex-1"></div>
-            </div>
-            <button onclick="showCreateAccount()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold py-4 rounded-2xl transition-all border border-slate-800 uppercase tracking-widest text-xs">
-                Setup New Vault
-            </button>
-        </div>
-
-        <!-- Create Account UI -->
-        <div id="createForm" class="hidden w-full max-w-[340px] flex flex-col gap-4">
-            <h3 class="text-white text-center font-black uppercase italic tracking-tighter text-lg mb-2">New Vault Setup</h3>
-            <p class="text-slate-500 text-[10px] text-center mb-4 leading-relaxed px-4">
-                新しいアカウントのパスワードを設定してください。<br>
-                <span class="text-indigo-400">※パスワードは復旧できません。忘れるとデータは永久に失われます。</span>
-            </p>
-            <input type="password" id="newPassword" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-5 text-center text-white focus:border-indigo-500 outline-none" placeholder="NEW PASSWORD">
-            <input type="password" id="confirmPassword" class="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-5 text-center text-white focus:border-indigo-500 outline-none" placeholder="CONFIRM PASSWORD">
-            <p id="createErrorMsg" class="text-red-500 text-[10px] font-bold text-center h-4 opacity-0 transition-opacity">一致しません</p>
-            
-            <div class="flex gap-3">
-                <button onclick="hideCreateAccount()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-xl hover:bg-slate-700 transition-all uppercase text-xs tracking-widest">Back</button>
-                <button onclick="createAccount()" class="flex-[2] bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-500 transition-all shadow-xl uppercase text-xs tracking-widest">Create Now</button>
-            </div>
-        </div>
-
-        <button onclick="requestSystemReset()" class="fixed bottom-8 right-8 text-slate-700 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.3em] transition-colors py-2 px-4">
-            Initialize System
-        </button>
+    <!-- Global Loader -->
+    <div id="globalLoader" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center hidden">
+        <div class="w-12 h-12 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p id="loaderMsg" class="mt-4 text-xs font-bold tracking-widest text-slate-400">処理中...</p>
     </div>
 
-    <!-- Main Content -->
-    <div id="mainContent" class="hidden opacity-0 transition-all duration-700 pb-64">
-        <main class="max-w-[2560px] mx-auto px-6 py-12">
-            <div id="fileGrid"></div>
-        </main>
-
-        <header id="mainHeader" class="glass-header fixed bottom-0 left-0 right-0 z-40">
-            <div class="max-w-[2560px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4 md:gap-2">
-                
-                <!-- Logo -->
-                <div class="flex items-center gap-3 shrink-0">
-                    <div class="dynamic-ui-icon bg-indigo-600 flex items-center justify-center rotate-2 shadow-xl shadow-indigo-600/30">
-                        <svg class="text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    </div>
-                </div>
-
-                <!-- Action Panel -->
-                <div class="flex flex-wrap items-center justify-center gap-3 lg:gap-5 flex-1 order-3 md:order-2">
-                    <div id="ioActions" class="flex items-center gap-1.5 shrink-0 bg-white/5 p-1 rounded-xl">
-                        <span id="fileCount" class="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden xl:inline mr-2 ml-2">登録: 0</span>
-                        <input type="file" id="importInput" class="hidden" accept=".json" onchange="initiateImport(this)">
-                        <button onclick="document.getElementById('importInput').click()" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">読込</button>
-                        <button onclick="exportFullBackup()" id="exportBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">書込</button>
-                    </div>
-
-                    <div class="h-6 w-px bg-slate-800 shrink-0 hidden md:block"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button id="addBtn" onclick="toggleUploadModal()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black shadow-lg">追加</button>
-                        <button onclick="toggleSelectMode()" id="deleteModeBtn" class="dynamic-ui-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">選択</button>
-                    </div>
-
-                    <div id="selectDivider" class="h-6 w-px bg-slate-800 shrink-0 hidden"></div>
-
-                    <!-- Bulk Actions -->
-                    <div id="selectActions" class="flex items-center gap-2 hidden shrink-0">
-                        <button onclick="startSlideshow(true)" id="bulkPlayBtn" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-500 text-white font-black shadow-lg">選択再生 (0)</button>
-                        <button onclick="deleteSelectedAssets()" id="bulkDeleteBtn" class="dynamic-ui-btn bg-red-600 hover:bg-red-500 text-white font-black shadow-lg">一括削除 (0)</button>
-                        <button onclick="toggleSelectAll()" class="dynamic-ui-btn bg-slate-800 text-slate-300 border border-slate-700 hidden lg:block">全選択</button>
-                    </div>
-
-                    <div class="h-6 w-px bg-slate-800 shrink-0 hidden lg:block"></div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <input type="text" id="searchInput" oninput="handleSearch()" class="search-input" placeholder="検索...">
-                        
-                        <div id="sortActions" class="shrink-0">
-                            <select id="sortSelect" onchange="renderGrid()" class="custom-select">
-                                <option value="reg_desc">登録順(新)</option>
-                                <option value="reg_asc">登録順(古)</option>
-                                <option value="file_desc">更新日(新)</option>
-                                <option value="file_asc">更新日(古)</option>
-                                <option value="name_asc">名前順(昇)</option>
-                                <option value="name_desc">名前順(降)</option>
-                                <option value="favorite">お気に入り</option>
-                            </select>
-                        </div>
-                        <div class="h-6 w-px bg-slate-800 shrink-0"></div>
-                        <button id="mainPlayBtn" onclick="handlePlayClick()" class="dynamic-ui-btn bg-indigo-600 hover:bg-indigo-50 text-white font-black shadow-lg">再生</button>
-                    </div>
-                </div>
-
-                <!-- System Controls -->
-                <div class="flex items-center gap-2 shrink-0 order-2 md:order-3">
-                    <div class="flex items-center bg-slate-900/50 px-2 py-1 rounded-lg border border-white/5 gap-3">
-                        <div class="flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 6h16M4 12h16m-7 6h7"/></svg>
-                            <input type="range" id="gridSlider" min="2" max="12" value="5" oninput="adjustGridSize(this.value)" class="slider-control">
-                        </div>
-                        <div class="w-px h-4 bg-slate-800"></div>
-                        <div class="flex items-center gap-0.5">
-                            <button onclick="adjustUIScale(-0.1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M20 12H4"/></svg>
-                            </button>
-                            <button onclick="adjustUIScale(0.1)" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white rounded transition-all">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-1 border-l border-slate-800 pl-2">
-                        <button onclick="toggleFocusMode()" class="text-slate-500 hover:text-white p-2" title="最大化"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
-                        <button onclick="toggleFullScreen()" class="text-slate-500 hover:text-white p-2" title="全画面"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg></button>
-                        <button onclick="lockVault()" class="text-slate-500 hover:text-white p-2" title="ログアウト"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg></button>
-                    </div>
+    <!-- Auth Screen -->
+    <div id="authScreen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-sm space-y-6 text-center">
+            <h1 class="text-2xl font-black tracking-tight text-white">SECURE<span class="text-indigo-500">VAULT</span> <span class="text-xs text-slate-600">Lite v6</span></h1>
+            
+            <div id="loginForm" class="space-y-3">
+                <input type="password" id="masterPass" class="w-full bg-slate-900 border border-slate-800 text-center text-white text-lg rounded-lg py-4 px-4 focus:border-indigo-500 outline-none transition-colors" placeholder="パスワード">
+                <button onclick="app.login()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-lg shadow-lg active:scale-[0.98] text-sm">ロック解除</button>
+                <div class="pt-2">
+                    <button onclick="ui.toggleCreateAccount()" class="text-xs text-slate-500 hover:text-white underline">初期化 / 新規作成</button>
                 </div>
             </div>
-            <div id="storageUsage" class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-[8px] font-black text-slate-600 uppercase tracking-widest pointer-events-none opacity-40 whitespace-nowrap">STORAGE STATUS LOADING...</div>
+
+            <div id="createForm" class="hidden space-y-3">
+                <p class="text-xs text-red-400 font-bold">※パスワードを忘れるとデータは復旧できません</p>
+                <input type="password" id="newPass" class="w-full bg-slate-900 border border-slate-800 text-center text-white rounded-lg py-3 px-4 focus:border-indigo-500 outline-none" placeholder="新しいパスワード">
+                <input type="password" id="confirmPass" class="w-full bg-slate-900 border border-slate-800 text-center text-white rounded-lg py-3 px-4 focus:border-indigo-500 outline-none" placeholder="確認用再入力">
+                <div class="flex gap-2">
+                    <button onclick="ui.toggleCreateAccount()" class="flex-1 bg-slate-800 text-slate-300 py-3 rounded-lg text-xs font-bold">戻る</button>
+                    <button onclick="app.createAccount()" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg text-xs font-bold">作成実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appInterface" class="flex-1 flex flex-col h-full opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Header -->
+        <header class="solid-panel sticky top-0 z-30 px-4 py-3 flex justify-between items-center h-16">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div class="leading-tight">
+                    <h2 class="font-bold text-sm text-white">保管庫 Lite</h2>
+                    <p id="itemCount" class="text-[10px] text-slate-400">読み込み中...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                 <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500 w-24 focus:w-32 transition-all">
+                <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
+            </div>
         </header>
 
-        <button id="exitFocusBtn" onclick="toggleFocusMode()" class="fixed bottom-32 right-8 z-50 bg-indigo-600 hover:bg-indigo-50 text-white w-16 h-16 flex items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 animate-bounce">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-    </div>
-
-    <!-- Lightbox -->
-    <div id="lightbox" class="fixed inset-0 z-50 hidden flex flex-col bg-black transition-all overflow-hidden select-none">
-        <div id="lightboxControls" class="lightbox-controls idle">
-            <div class="controls-inner">
-                <div class="zoom-group">
-                    <button onclick="zoomContent(1.25)" class="zoom-btn" title="拡大"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></button>
-                    <button onclick="zoomContent(0.8)" class="zoom-btn" title="縮小"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M20 12H4"/></svg></button>
-                    <button onclick="resetZoom()" class="zoom-btn" title="リセット"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></svg></button>
-                    <button onclick="rotateContent()" class="zoom-btn" title="回転"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
-                </div>
-                <button id="slideshowBtn" onclick="toggleSlideshow()" class="zoom-btn" title="スライドショー">
-                    <svg id="playIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="pauseIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <button id="lightboxCloseBtn" onclick="closeLightboxUI()" class="close-lightbox-btn" title="閉じる"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+        <!-- Content Area -->
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-slate-950" id="mainScroll">
+            <div id="gridContainer" class="asset-grid"></div>
+            
+            <div id="emptyState" class="hidden h-64 flex flex-col items-center justify-center text-slate-700">
+                <p class="text-xs font-bold tracking-widest">データがありません</p>
             </div>
-            <!-- Progress for vertical panel -->
-            <div class="progress-container"><div id="progressBar" class="progress-bar"></div></div>
-        </div>
+        </main>
 
-        <button id="prevBtn" class="nav-btn fixed left-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7" /></svg></button>
-        <button id="nextBtn" class="nav-btn fixed right-6 top-1/2 w-16 h-16 flex items-center justify-center text-white/40 z-[70] rounded-full shadow-2xl"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M9 5l7 7-7 7" /></svg></button>
+        <!-- Bottom Actions -->
+        <div class="floating-panel fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full px-4 py-2 flex items-center gap-4 z-30">
+            <button onclick="document.getElementById('fileInput').click()" class="text-indigo-400 hover:text-white flex flex-col items-center gap-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span class="text-[9px] font-bold">追加</span>
+            </button>
+            <div class="w-px h-6 bg-slate-700"></div>
+            <button onclick="ui.toggleSelectionMode()" id="selectBtn" class="text-slate-400 hover:text-white flex flex-col items-center gap-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-[9px] font-bold">選択</span>
+            </button>
+            
+            <div id="selectionActions" class="hidden flex items-center gap-4 border-l border-slate-700 pl-4">
+                 <button onclick="app.deleteSelected()" class="text-red-400 hover:text-red-200 flex flex-col items-center gap-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    <span class="text-[9px] font-bold">削除</span>
+                 </button>
+            </div>
+        </div>
         
-        <div id="mediaContainer">
-            <div id="zoomWrapper">
-                <div id="mediaLoader" class="absolute inset-0 flex items-center justify-center z-[75] bg-black/90"><div class="loader"></div></div>
-            </div>
-        </div>
+        <input type="file" id="fileInput" multiple accept="image/*,application/pdf" class="hidden" onchange="app.handleUpload(this)">
     </div>
 
-    <!-- Confirm Modal -->
-    <div id="confirmModal" class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center">
-            <h3 id="confirmTitle" class="text-2xl font-black text-white mb-4 uppercase italic">確認</h3>
-            <p id="confirmMessage" class="text-slate-400 text-sm mb-10 leading-relaxed">メッセージ</p>
-            <div class="flex gap-4">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-800 text-white font-bold py-5 rounded-2xl hover:bg-slate-700 transition-all">キャンセル</button>
-                <button id="confirmBtn" class="flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl">実行</button>
-            </div>
+    <!-- Viewer Modal -->
+    <div id="viewer" class="fixed inset-0 z-40 bg-black hidden flex-col">
+        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between z-50 bg-black/50">
+            <button onclick="ui.closeViewer()" class="p-2 bg-slate-800 rounded-full"><svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <div class="text-white text-xs font-mono self-center px-4" id="viewerFileName"></div>
         </div>
+        <div class="viewer-container" id="viewerContainer"></div>
     </div>
 
-    <!-- Import Modal -->
-    <div id="importModal" class="fixed inset-0 z-[301] hidden flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-sm rounded-[3rem] p-10 shadow-2xl text-center relative">
-            <h3 class="text-2xl font-black text-white mb-4 uppercase italic">データの復元</h3>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
-                取り込むデータのパスワードを入力してください。<br>
-                <span class="text-indigo-400 text-xs font-bold block mt-1">※バックアップ作成時のパスワードが必要です</span>
-            </p>
-            <div class="relative w-full">
-                <input type="password" id="importPassword" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-5 mb-1 text-center text-white focus:border-indigo-500 outline-none shadow-inner transition-all" placeholder="PASSWORD">
-                <p id="importErrorMsg" class="text-red-500 text-[11px] font-bold h-5 opacity-0 transition-opacity">入力内容が間違っています</p>
-            </div>
-            <div class="flex gap-4 mt-2">
-                <button onclick="cancelImport()" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-2xl hover:bg-slate-700 transition-all">戻る</button>
-                <button id="executeImportBtn" class="flex-1 bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-500 transition-all shadow-xl">変換開始</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-[4rem] p-12 shadow-2xl relative text-center">
-            <button onclick="toggleUploadModal()" class="absolute bottom-10 right-10 bg-slate-800 text-slate-400 hover:text-white p-5 rounded-2xl transition-colors"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
-            <div id="dropZone" class="border-2 border-dashed border-slate-700 bg-slate-950/50 rounded-[3rem] p-16 flex flex-col items-center justify-center group cursor-pointer hover:border-indigo-500 transition-all">
-                <div class="w-24 h-24 bg-slate-800 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-all shadow-xl"><svg class="w-12 h-12 text-slate-500 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 4.5v15m7.5-7.5h-15"></path></svg></div>
-                <h2 class="text-3xl font-black text-white mb-2 uppercase italic tracking-tighter text-center">Secure Storage</h2>
-                <p class="text-slate-500 text-sm text-center">ここにドロップして保管</p>
-                <input type="file" id="fileInput" class="hidden" multiple accept="image/*,application/pdf">
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="fixed bottom-44 left-1/2 -translate-x-1/2 z-[500] bg-indigo-600 text-white px-10 py-5 rounded-3xl font-bold shadow-2xl transition-all transform translate-y-28 opacity-0 pointer-events-none text-sm text-center min-w-[320px]">メッセージ</div>
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-xl font-bold text-xs z-[100] hidden whitespace-nowrap border border-slate-700"></div>
 
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-        const DB_NAME = "AssetStorage_MultiUser_v5";
-        const STORE_NAME = "assets";
-        const CONFIG_STORE = "config";
-        
-        let db = null, library = [], currentIdx = -1, sessionKey = null, currentUserId = null, deleteTargetIds = [];
-        let isSelectMode = false, selectedIds = new Set();
-        let currentPDF = null, currentZoom = 1, uiScale = 1.0, currentRotation = 0;
-        let controlsTimer = null; 
-        let pendingImportData = null;
-        let searchQuery = "";
+        /* V6 LITE EDITION
+           - Web Worker廃止（互換性重視）
+           - 重いCSS演出の削除
+           - V6のDB設計（メタデータ分離）は維持
+        */
 
-        // Slideshow
-        let isSlideshowPlaying = false;
-        let slideshowList = [];
-        let slideshowTimer = null;
-        let slideshowProgressInterval = null;
-        const SLIDE_DURATION = 5000; 
-        let slideTimeElapsed = 0;
-        let currentPDFPageIdx = 1;
-
-        const generateId = () => (typeof crypto.randomUUID === 'function') ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2);
-
-        const initDB = () => {
-            const request = indexedDB.open(DB_NAME, 1);
-            request.onupgradeneeded = e => {
-                const database = e.target.result;
-                const assetStore = database.createObjectStore(STORE_NAME, { keyPath: "id" });
-                assetStore.createIndex("ownerId", "ownerId", { unique: false });
-                database.createObjectStore(CONFIG_STORE, { keyPath: "key" });
-            };
-            request.onsuccess = e => { db = e.target.result; };
-        };
-        initDB();
-
-        function adjustUIScale(delta) {
-            uiScale = Math.min(Math.max(uiScale + delta, 0.6), 2.0);
-            document.documentElement.style.setProperty('--ui-scale', uiScale);
-            const pb = Math.round(240 * uiScale);
-            const mc = document.getElementById('mainContent');
-            if (mc) mc.style.paddingBottom = pb + 'px';
-            showToast(`UIサイズ: ${Math.round(uiScale * 100)}%`);
-        }
-
-        function adjustGridSize(cols) {
-            document.documentElement.style.setProperty('--grid-cols', cols);
-            showToast(`グリッド表示: ${cols}列`);
-        }
-
-        async function deriveKey(password, salt) {
-            return CryptoJS.PBKDF2(password, salt, { keySize: 256 / 32, iterations: 100000 });
-        }
-
-        async function authenticate() {
-            if (!db) return;
-            const passInput = document.getElementById('masterPassword');
-            const errorMsg = document.getElementById('loginErrorMsg');
-            const pass = passInput.value;
+        // --- CRYPTO UTILS (MAIN THREAD) ---
+        // UIフリーズを防ぐため、PromiseでラップしsetTimeoutでイベントループを回す
+        const asyncCrypto = async (action, payload, secret, salt = null, iterations = null) => {
+            await new Promise(r => setTimeout(r, 5)); // UI更新のために少し待機
             
-            if (pass.length < 4) {
-                showLoginError("4文字以上入力してください");
-                return;
-            }
-
-            const userHash = CryptoJS.SHA256(pass).toString();
-            const configKey = "vault_config_" + userHash;
-            const tx = db.transaction(CONFIG_STORE, "readonly");
-            const configStore = tx.objectStore(CONFIG_STORE);
-            
-            const userConfig = await new Promise(r => { 
-                const req = configStore.get(configKey); 
-                req.onsuccess = () => r(req.result); 
-            });
-
-            if (!userConfig) {
-                showLoginError("ログインできません。");
-                return;
-            }
-
-            const salt = userConfig.salt;
-            const derived = await deriveKey(pass, salt);
-            const testResult = decryptWithKey(userConfig.challenge, userConfig.iv, derived);
-            
-            if (testResult !== "OK") { 
-                showLoginError("ログインできません。");
-                return; 
-            }
-
-            sessionKey = derived;
-            currentUserId = userHash;
-            errorMsg.style.opacity = "0";
-            passInput.value = "";
-            document.getElementById('authOverlay').style.display = 'none';
-            const main = document.getElementById('mainContent');
-            main.classList.remove('hidden', 'opacity-0');
-            
-            setTimeout(async () => {
-                main.classList.add('opacity-100');
-                await loadFromDB();
-                window.dispatchEvent(new Event('resize'));
-                updateStorageUsage();
-            }, 100);
-        }
-
-        function showLoginError(msg) {
-            const errorMsg = document.getElementById('loginErrorMsg');
-            const passInput = document.getElementById('masterPassword');
-            errorMsg.textContent = msg;
-            errorMsg.style.opacity = "1";
-            passInput.classList.add('shake');
-            passInput.value = "";
-            setTimeout(() => passInput.classList.remove('shake'), 400);
-        }
-
-        function showCreateAccount() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('createForm').classList.remove('hidden');
-            document.getElementById('newPassword').value = "";
-            document.getElementById('confirmPassword').value = "";
-            document.getElementById('createErrorMsg').style.opacity = "0";
-        }
-
-        function hideCreateAccount() {
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('loginErrorMsg').style.opacity = "0";
-        }
-
-        async function createAccount() {
-            const p1 = document.getElementById('newPassword').value;
-            const p2 = document.getElementById('confirmPassword').value;
-            const errorMsg = document.getElementById('createErrorMsg');
-
-            if (p1.length < 4) {
-                errorMsg.textContent = "4文字以上で設定してください";
-                errorMsg.style.opacity = "1";
-                return;
-            }
-            if (p1 !== p2) {
-                errorMsg.textContent = "パスワードが一致しません";
-                errorMsg.style.opacity = "1";
-                return;
-            }
-
-            const userHash = CryptoJS.SHA256(p1).toString();
-            const configKey = "vault_config_" + userHash;
-            
-            const txCheck = db.transaction(CONFIG_STORE, "readonly");
-            const existing = await new Promise(r => {
-                const req = txCheck.objectStore(CONFIG_STORE).get(configKey);
-                req.onsuccess = () => r(req.result);
-            });
-
-            if (existing) {
-                errorMsg.textContent = "既に登録されているパスワードです";
-                errorMsg.style.opacity = "1";
-                return;
-            }
-
-            const salt = CryptoJS.lib.WordArray.random(128/8).toString();
-            const derived = await deriveKey(p1, salt);
-            const iv = CryptoJS.lib.WordArray.random(128/8);
-            const encryptedChallenge = CryptoJS.AES.encrypt("OK", derived, { iv: iv }).toString();
-            
-            const userConfig = { 
-                key: configKey, 
-                salt: salt, 
-                challenge: encryptedChallenge, 
-                iv: iv.toString() 
-            };
-
-            const txSave = db.transaction(CONFIG_STORE, "readwrite");
-            txSave.objectStore(CONFIG_STORE).put(userConfig);
-            txSave.oncomplete = () => {
-                showToast("作成完了。ログインしてください");
-                hideCreateAccount();
-            };
-        }
-
-        function decryptWithKey(cipherText, ivHex, key) {
             try {
-                const iv = CryptoJS.enc.Hex.parse(ivHex);
-                const bytes = CryptoJS.AES.decrypt(cipherText, key, { iv: iv });
-                const result = bytes.toString(CryptoJS.enc.Utf8);
-                return result || null;
-            } catch(e) { return null; }
-        }
-
-        function encrypt(text) {
-            if (!text) return "";
-            const iv = CryptoJS.lib.WordArray.random(128/8);
-            const encrypted = CryptoJS.AES.encrypt(text, sessionKey, { iv: iv });
-            return iv.toString() + ":" + encrypted.toString();
-        }
-
-        function decrypt(cipherWithIv) {
-            if (!cipherWithIv || !sessionKey) return null;
-            try {
-                const parts = cipherWithIv.split(":");
-                if (parts.length < 2) return null;
-                return decryptWithKey(parts[1], parts[0], sessionKey);
-            } catch(e) { return null; }
-        }
-
-        function handleSearch() {
-            searchQuery = document.getElementById('searchInput').value.toLowerCase();
-            renderGrid();
-        }
-
-        function initiateImport(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const rd = new FileReader();
-            rd.onload = e => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (!data.assets || !data.config) throw new Error("形式が違います");
-                    pendingImportData = data;
-                    document.getElementById('importModal').classList.remove('hidden');
-                    const passIn = document.getElementById('importPassword');
-                    const errorMsg = document.getElementById('importErrorMsg');
-                    passIn.value = "";
-                    passIn.classList.remove('shake');
-                    errorMsg.style.opacity = "0";
-                    passIn.focus();
-                    
-                    document.getElementById('executeImportBtn').onclick = () => runMigrationImport();
-                } catch (err) {
-                    showToast("読み込み失敗: ファイル形式が違います");
+                if (action === 'deriveKey') {
+                    // 鍵生成は重いので、ここでのみ同期的に実行（ローディング表示済み前提）
+                    return CryptoJS.PBKDF2(payload, salt, { keySize: 256/32, iterations: 5000 }).toString(); // 反復回数を5000に調整
+                } 
+                else if (action === 'encrypt') {
+                    const iv = CryptoJS.lib.WordArray.random(128/8);
+                    const encrypted = CryptoJS.AES.encrypt(payload, secret, { iv: iv });
+                    return iv.toString() + ":" + encrypted.toString();
                 }
-            };
-            rd.readAsText(file);
-            input.value = ""; 
-        }
+                else if (action === 'decrypt') {
+                    const parts = payload.split(":");
+                    if (parts.length < 2) throw new Error("Invalid format");
+                    const iv = CryptoJS.enc.Hex.parse(parts[0]);
+                    const bytes = CryptoJS.AES.decrypt(parts[1], secret, { iv: iv });
+                    const str = bytes.toString(CryptoJS.enc.Utf8);
+                    // 【修正】空文字（サムネイルなし等）は正常として許可する
+                    if (str === "" && payload) return str; 
+                    if (!str && str !== "") throw new Error("Decryption failed");
+                    return str;
+                }
+            } catch (e) {
+                console.error("Crypto Error:", e);
+                throw e;
+            }
+        };
 
-        function cancelImport() {
-            document.getElementById('importModal').classList.add('hidden');
-            pendingImportData = null;
-        }
+        // --- CONSTANTS ---
+        const DB_NAME = "Vault_Pro_v6";
+        const STORES = { META: 'assets_meta', DATA: 'assets_content', CONFIG: 'config' };
+        
+        const state = {
+            db: null,
+            key: null,
+            userId: null,
+            assets: [],
+            selected: new Set(),
+            isSelectionMode: false
+        };
 
-        async function runMigrationImport() {
-            const passInput = document.getElementById('importPassword');
-            const errorMsg = document.getElementById('importErrorMsg');
-            const importPass = passInput.value;
-            if (!importPass) return;
+        // --- DATABASE ---
+        const dbMgr = {
+            init: () => {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(DB_NAME, 6);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORES.CONFIG)) db.createObjectStore(STORES.CONFIG, { keyPath: 'key' });
+                        if (!db.objectStoreNames.contains(STORES.META)) {
+                            const metaStore = db.createObjectStore(STORES.META, { keyPath: 'id' });
+                            metaStore.createIndex('ownerId', 'ownerId', { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains(STORES.DATA)) {
+                            db.createObjectStore(STORES.DATA, { keyPath: 'id' });
+                        }
+                    };
+                    req.onsuccess = (e) => { state.db = e.target.result; resolve(); };
+                    req.onerror = reject;
+                });
+            },
+            getMeta: async (userId) => {
+                return new Promise(resolve => {
+                    const tx = state.db.transaction(STORES.META, 'readonly');
+                    const index = tx.objectStore(STORES.META).index('ownerId');
+                    const req = index.getAll(userId);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => resolve([]);
+                });
+            },
+            getContent: async (id) => {
+                return new Promise((resolve, reject) => {
+                    const tx = state.db.transaction(STORES.DATA, 'readonly');
+                    const req = tx.objectStore(STORES.DATA).get(id);
+                    req.onsuccess = () => resolve(req.result ? req.result.content : null);
+                    req.onerror = reject;
+                });
+            },
+            saveAsset: async (meta, content) => {
+                return new Promise((resolve, reject) => {
+                    const tx = state.db.transaction([STORES.META, STORES.DATA], 'readwrite');
+                    tx.objectStore(STORES.META).put(meta);
+                    tx.objectStore(STORES.DATA).put({ id: meta.id, content: content });
+                    tx.oncomplete = resolve;
+                    tx.onerror = reject;
+                });
+            },
+            deleteAsset: async (id) => {
+                const tx = state.db.transaction([STORES.META, STORES.DATA], 'readwrite');
+                tx.objectStore(STORES.META).delete(id);
+                tx.objectStore(STORES.DATA).delete(id);
+                return new Promise(r => tx.oncomplete = r);
+            }
+        };
+
+        // --- APP LOGIC ---
+        const app = {
+            init: async () => {
+                await dbMgr.init();
+            },
             
-            const btn = document.getElementById('executeImportBtn');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = "変換中...";
-            errorMsg.style.opacity = "0";
+            login: async () => {
+                const pass = document.getElementById('masterPass').value;
+                if(pass.length < 4) return ui.toast("パスワードが短すぎます");
+                
+                ui.loader(true, "認証処理中...");
+                // UI描画のために少し待つ
+                setTimeout(async () => {
+                    const hash = CryptoJS.SHA256(pass).toString();
+                    const configKey = "cfg_" + hash;
+
+                    try {
+                        const tx = state.db.transaction(STORES.CONFIG, 'readonly');
+                        const req = tx.objectStore(STORES.CONFIG).get(configKey);
+                        
+                        req.onsuccess = async () => {
+                            const config = req.result;
+                            if (!config) {
+                                ui.loader(false);
+                                ui.toast("保管庫が見つかりません");
+                                return;
+                            }
+
+                            try {
+                                const derivedKey = await asyncCrypto('deriveKey', pass, null, config.salt);
+                                const decryptedTest = await asyncCrypto('decrypt', config.challenge, derivedKey);
+                                
+                                if (decryptedTest === "VERIFIED") {
+                                    state.key = derivedKey;
+                                    state.userId = hash;
+                                    app.unlockInterface();
+                                } else {
+                                    throw new Error();
+                                }
+                            } catch (e) {
+                                ui.loader(false);
+                                ui.toast("パスワードが違います");
+                                document.getElementById('masterPass').value = '';
+                            }
+                        };
+                    } catch(e) { ui.loader(false); ui.toast("システムエラー"); }
+                }, 100);
+            },
+
+            createAccount: async () => {
+                const p1 = document.getElementById('newPass').value;
+                const p2 = document.getElementById('confirmPass').value;
+                if (p1 !== p2 || p1.length < 4) return ui.toast("パスワードが無効です");
+
+                ui.loader(true, "保管庫を作成中...");
+                setTimeout(async () => {
+                    const hash = CryptoJS.SHA256(p1).toString();
+                    const salt = CryptoJS.lib.WordArray.random(128/8).toString();
+                    
+                    const derivedKey = await asyncCrypto('deriveKey', p1, null, salt);
+                    const challenge = await asyncCrypto('encrypt', "VERIFIED", derivedKey);
+
+                    const config = { key: "cfg_" + hash, salt, challenge };
+                    
+                    const tx = state.db.transaction(STORES.CONFIG, 'readwrite');
+                    tx.objectStore(STORES.CONFIG).put(config);
+                    tx.oncomplete = () => {
+                        ui.loader(false);
+                        ui.toast("作成完了。ログインしてください");
+                        ui.toggleCreateAccount();
+                        document.getElementById('masterPass').value = '';
+                    };
+                }, 100);
+            },
+
+            unlockInterface: async () => {
+                document.getElementById('authScreen').style.display = 'none';
+                const main = document.getElementById('appInterface');
+                main.classList.remove('opacity-0', 'pointer-events-none');
+                await app.refreshLibrary();
+                ui.loader(false);
+            },
+
+            refreshLibrary: async () => {
+                state.assets = await dbMgr.getMeta(state.userId);
+                state.assets.sort((a,b) => b.timestamp - a.timestamp);
+                ui.renderGrid();
+            },
+
+            handleUpload: async (input) => {
+                if (!input.files.length) return;
+                const files = Array.from(input.files);
+                ui.loader(true, "ファイルを処理中...");
+
+                // 1つずつ直列処理してUIフリーズを回避
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    ui.updateLoaderMsg(`暗号化中... (${i + 1}/${files.length})`);
+                    
+                    try {
+                        const reader = new FileReader();
+                        const dataUrl = await new Promise(r => { reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
+
+                        let thumb = "";
+                        if (file.type.startsWith('image')) {
+                            thumb = await utils.createThumb(dataUrl);
+                        }
+
+                        const encName = await asyncCrypto('encrypt', file.name, state.key);
+                        const encType = await asyncCrypto('encrypt', file.type, state.key);
+                        const encThumb = await asyncCrypto('encrypt', thumb, state.key);
+                        const encData = await asyncCrypto('encrypt', dataUrl, state.key);
+
+                        const id = crypto.randomUUID();
+                        const meta = {
+                            id,
+                            ownerId: state.userId,
+                            name: encName,
+                            type: encType,
+                            thumbnail: encThumb,
+                            timestamp: Date.now(),
+                            size: file.size
+                        };
+
+                        await dbMgr.saveAsset(meta, encData);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
+                input.value = "";
+                await app.refreshLibrary();
+                ui.loader(false);
+                ui.toast("保存完了");
+            },
+
+            openItem: async (id) => {
+                if (state.isSelectionMode) return app.toggleSelect(id);
+                
+                ui.loader(true, "復号して開いています...");
+                setTimeout(async () => {
+                    const meta = state.assets.find(a => a.id === id);
+                    const encContent = await dbMgr.getContent(id);
+                    
+                    if (!encContent) {
+                        ui.loader(false);
+                        return ui.toast("データが見つかりません");
+                    }
+
+                    try {
+                        const decryptedData = await asyncCrypto('decrypt', encContent, state.key);
+                        const decryptedType = await asyncCrypto('decrypt', meta.type, state.key);
+                        const decryptedName = await asyncCrypto('decrypt', meta.name, state.key);
+                        
+                        viewer.show(decryptedData, decryptedType, decryptedName);
+                        ui.loader(false);
+                    } catch(e) {
+                        ui.loader(false);
+                        ui.toast("復号エラー");
+                    }
+                }, 50);
+            },
+
+            lock: () => {
+                location.reload(); // 最も確実なロック方法（メモリクリア）
+            },
             
-            try {
-                const oldConfig = pendingImportData.config;
-                const oldKey = await deriveKey(importPass, oldConfig.salt);
-                const verify = decryptWithKey(oldConfig.challenge, oldConfig.iv, oldKey);
-                if (verify !== "OK") {
-                    showToast("入力内容が間違っています");
-                    errorMsg.style.opacity = "1";
-                    passInput.value = "";
-                    passInput.classList.add('shake');
-                    setTimeout(() => passInput.classList.remove('shake'), 400);
-                    btn.disabled = false;
-                    btn.textContent = originalText;
+            toggleSelect: (id) => {
+                if (state.selected.has(id)) state.selected.delete(id);
+                else state.selected.add(id);
+                ui.updateSelectionUI();
+            },
+            
+            deleteSelected: async () => {
+                if(!confirm(`${state.selected.size} 件を削除しますか？`)) return;
+                ui.loader(true, "削除中...");
+                for(let id of state.selected) await dbMgr.deleteAsset(id);
+                state.selected.clear();
+                ui.toggleSelectionMode();
+                await app.refreshLibrary();
+                ui.loader(false);
+            },
+
+            filter: () => {
+                const q = document.getElementById('searchInput').value.toLowerCase();
+                const grid = document.getElementById('gridContainer');
+                for (let card of grid.children) {
+                    const name = card.dataset.name.toLowerCase();
+                    card.style.display = name.includes(q) ? 'block' : 'none';
+                }
+            }
+        };
+
+        // --- UI ---
+        const ui = {
+            loader: (show, msg) => {
+                const el = document.getElementById('globalLoader');
+                if (msg) document.getElementById('loaderMsg').textContent = msg;
+                el.style.display = show ? 'flex' : 'none';
+            },
+            updateLoaderMsg: (msg) => {
+                document.getElementById('loaderMsg').textContent = msg;
+            },
+            toast: (msg) => {
+                const t = document.getElementById('toast');
+                t.textContent = msg;
+                // 【修正】inline-styleのdisplay設定を削除し、classList制御のみにする
+                t.style.display = ''; 
+                t.classList.remove('hidden');
+                setTimeout(() => t.classList.add('hidden'), 3000);
+            },
+            toggleCreateAccount: () => {
+                document.getElementById('loginForm').classList.toggle('hidden');
+                document.getElementById('createForm').classList.toggle('hidden');
+            },
+            renderGrid: async () => {
+                const grid = document.getElementById('gridContainer');
+                grid.innerHTML = '';
+                
+                if (state.assets.length === 0) {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    document.getElementById('itemCount').textContent = "0 件";
                     return;
                 }
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('itemCount').textContent = `${state.assets.length} 件`;
 
-                showToast("再暗号化中...");
-                const tx = db.transaction(STORE_NAME, "readwrite");
-                const assetStore = tx.objectStore(STORE_NAME);
-                
-                let count = 0;
-                const now = Date.now();
-                for (let i = 0; i < pendingImportData.assets.length; i++) {
-                    const item = pendingImportData.assets[i];
-                    const migrateField = (field) => {
-                        if (!field) return "";
-                        const p = field.split(":");
-                        const plain = decryptWithKey(p[1], p[0], oldKey);
-                        if (plain === null) return null;
-                        return encrypt(plain);
-                    };
+                // バッチ処理でサムネイルを復号・描画
+                for (let i = 0; i < state.assets.length; i++) {
+                    const item = state.assets[i];
+                    const el = document.createElement('div');
+                    el.className = 'asset-card group';
+                    el.dataset.id = item.id;
+                    el.innerHTML = `
+                        <div class="w-full h-full bg-slate-800 flex items-center justify-center text-slate-600 text-xs">
+                            <span class="loading-text">...</span>
+                        </div>
+                        <img class="hidden w-full h-full object-cover">
+                        <div class="absolute bottom-0 inset-x-0 bg-black/70 p-2 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="name-text"></span>
+                        </div>
+                    `;
+                    el.onclick = () => app.openItem(item.id);
+                    grid.appendChild(el);
 
-                    const newAsset = {
-                        id: generateId(),
-                        ownerId: currentUserId,
-                        name: migrateField(item.name),
-                        type: migrateField(item.type),
-                        size: migrateField(item.size),
-                        thumbnail: migrateField(item.thumbnail),
-                        data: migrateField(item.data),
-                        timestamp: now + i, 
-                        fileModified: migrateField(item.fileModified),
-                        isFavorite: item.isFavorite || false
-                    };
-
-                    if (newAsset.data !== null) {
-                        assetStore.put(newAsset);
-                        count++;
-                    }
-                }
-
-                tx.oncomplete = () => {
-                    document.getElementById('importModal').classList.add('hidden');
-                    showToast(`${count}件を現在の環境に統合しました`);
-                    setTimeout(() => location.reload(), 1500);
-                };
-            } catch (e) {
-                showToast("エラーが発生しました");
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        async function loadFromDB() {
-            if (!db || !sessionKey || !currentUserId) return;
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const index = tx.objectStore(STORE_NAME).index("ownerId");
-            const data = await new Promise(r => { 
-                const req = index.getAll(currentUserId); 
-                req.onsuccess = () => r(req.result); 
-                req.onerror = () => r([]); 
-            });
-            library = data;
-            renderGrid();
-        }
-
-        function getSortedLibrary() {
-            const sortVal = document.getElementById('sortSelect').value;
-            let filteredList = [...library];
-            
-            if (searchQuery) {
-                filteredList = filteredList.filter(item => {
-                    const name = decrypt(item.name) || "";
-                    return name.toLowerCase().includes(searchQuery);
-                });
-            }
-            
-            if (sortVal === 'reg_desc') {
-                filteredList.sort((a, b) => b.timestamp - a.timestamp);
-            } else if (sortVal === 'reg_asc') {
-                filteredList.sort((a, b) => a.timestamp - b.timestamp);
-            } else if (sortVal === 'file_desc') {
-                filteredList.sort((a, b) => parseInt(decrypt(b.fileModified) || b.timestamp) - parseInt(decrypt(a.fileModified) || a.timestamp));
-            } else if (sortVal === 'file_asc') {
-                filteredList.sort((a, b) => parseInt(decrypt(a.fileModified) || a.timestamp) - parseInt(decrypt(b.fileModified) || b.timestamp));
-            } else if (sortVal === 'name_asc') {
-                filteredList.sort((a, b) => (decrypt(a.name) || "").localeCompare(decrypt(b.name) || "", 'ja'));
-            } else if (sortVal === 'name_desc') {
-                filteredList.sort((a, b) => (decrypt(b.name) || "").localeCompare(decrypt(a.name) || "", 'ja'));
-            } else if (sortVal === 'favorite') {
-                filteredList.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0) || b.timestamp - a.timestamp);
-            }
-            
-            return filteredList;
-        }
-
-        async function toggleFavorite(id) {
-            const asset = library.find(item => item.id === id);
-            if (!asset) return;
-            
-            asset.isFavorite = !asset.isFavorite;
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).put(asset);
-            tx.oncomplete = () => {
-                renderGrid();
-                showToast(asset.isFavorite ? "お気に入りに追加" : "お気に入りを解除");
-            };
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById('fileGrid');
-            grid.innerHTML = '';
-            
-            const displayList = getSortedLibrary();
-            
-            if (displayList.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-48 text-center border-2 border-dashed border-slate-800 rounded-[4rem] bg-slate-900/10"><p class="text-slate-600 font-bold uppercase tracking-[0.4em] text-[10px]">${searchQuery ? '検索結果なし' : 'コンテンツなし'}</p></div>`;
-                document.getElementById('fileCount').textContent = `登録数: 0`;
-                return;
-            }
-
-            displayList.forEach((item, index) => {
-                const card = document.createElement('div');
-                const isSelected = selectedIds.has(item.id);
-                card.className = `asset-card group bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl cursor-pointer ${isSelected ? 'selected' : ''}`;
-                const name = decrypt(item.name) || "暗号化データ";
-                const thumb = decrypt(item.thumbnail);
-                
-                card.innerHTML = `
-                    <div class="absolute top-4 left-4 z-20 flex gap-2">
-                        ${!isSelectMode ? `<button class="del-btn bg-slate-950/90 text-white/40 p-3 rounded-2xl border border-white/5 hover:bg-red-600 hover:text-white transition-all opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : ''}
-                        ${isSelectMode ? `<div class="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-slate-900/80'}"><svg class="w-5 h-5 text-white ${isSelected ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div>` : ''}
-                    </div>
-                    <div class="absolute top-4 right-4 z-20">
-                        <button onclick="event.stopPropagation(); toggleFavorite('${item.id}')" class="fav-btn p-3 rounded-2xl transition-all ${item.isFavorite ? 'text-red-500 bg-red-500/10' : 'text-white/20 bg-slate-950/40 opacity-0 group-hover:opacity-100'}">
-                            <svg class="w-6 h-6" fill="${item.isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                        </button>
-                    </div>
-                    <div class="aspect-[4/5] w-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
-                        ${thumb ? `<img src="${thumb}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-1000" loading="lazy">` : `<div class="text-slate-700"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg></div>`}
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none"></div>
-                    </div>
-                    <div class="p-4 border-t border-slate-800/50 text-center bg-slate-900"><p class="text-[10px] font-black text-slate-100 truncate uppercase">${name}</p></div>
-                `;
-                card.onclick = (e) => {
-                    if (isSelectMode) {
-                        if (selectedIds.has(item.id)) selectedIds.delete(item.id);
-                        else selectedIds.add(item.id);
-                        renderGrid();
-                        updateSelectionButtons();
-                    } else {
-                        if (!e.target.closest('button')) openLightbox(index, displayList);
-                    }
-                };
-                const delBtn = card.querySelector('.del-btn');
-                if (delBtn) {
-                    delBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        deleteTargetIds = [item.id];
-                        const modal = document.getElementById('confirmModal');
-                        document.getElementById('confirmTitle').textContent = "コンテンツの削除";
-                        document.getElementById('confirmMessage').textContent = "このコンテンツを完全に削除します。";
-                        const btn = document.getElementById('confirmBtn');
-                        btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
-                        btn.onclick = async () => {
-                            const tx = db.transaction(STORE_NAME, "readwrite");
-                            tx.objectStore(STORE_NAME).delete(deleteTargetIds[0]);
-                            tx.oncomplete = () => { closeConfirm(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
-                        };
-                        modal.classList.remove('hidden');
-                    };
-                }
-                grid.appendChild(card);
-            });
-            document.getElementById('fileCount').textContent = `登録数: ${library.length}`;
-        }
-
-        async function exportFullBackup() {
-            const btn = document.getElementById('exportBtn'); 
-            if(btn) btn.textContent = "処理中...";
-            try {
-                const tx = db.transaction(CONFIG_STORE, "readonly");
-                const configKey = "vault_config_" + currentUserId;
-                const userConfig = await new Promise(r => { const req = tx.objectStore(CONFIG_STORE).get(configKey); req.onsuccess = () => r(req.result); });
-                const backupData = { version: "MultiUser-v5", userId: currentUserId, config: userConfig, assets: library };
-                const blob = new Blob([JSON.stringify(backupData)], { type: "application/json" });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                a.download = `vault-export-user-${new Date().toISOString().split('T')[0]}.json`; 
-                a.click();
-                showToast("バックアップを作成しました");
-            } catch (e) { showToast("失敗"); } finally { if(btn) btn.textContent = "書込"; }
-        }
-
-        function toggleSelectMode() {
-            isSelectMode = !isSelectMode;
-            if (!isSelectMode) selectedIds.clear();
-            
-            // Revert Selection actions to the bottom header center
-            document.getElementById('ioActions').classList.toggle('hidden', isSelectMode);
-            document.getElementById('sortActions').parentNode.classList.toggle('hidden', isSelectMode);
-            document.getElementById('addBtn').classList.toggle('hidden', isSelectMode);
-            document.getElementById('selectDivider').classList.toggle('hidden', !isSelectMode);
-            document.getElementById('selectActions').classList.toggle('hidden', !isSelectMode);
-            
-            const delModeBtn = document.getElementById('deleteModeBtn');
-            delModeBtn.textContent = isSelectMode ? "解除" : "選択";
-            
-            updateSelectionButtons();
-            renderGrid();
-        }
-
-        function toggleSelectAll() {
-            if (selectedIds.size === library.length) selectedIds.clear();
-            else library.forEach(item => selectedIds.add(item.id));
-            renderGrid();
-            updateSelectionButtons();
-        }
-
-        function updateSelectionButtons() {
-            const count = selectedIds.size;
-            const delBtn = document.getElementById('bulkDeleteBtn');
-            const playBtn = document.getElementById('bulkPlayBtn');
-            if(delBtn) delBtn.textContent = `一括削除 (${count})`;
-            if(playBtn) playBtn.textContent = `選択再生 (${count})`;
-        }
-
-        function deleteSelectedAssets() {
-            if (selectedIds.size === 0) return;
-            deleteTargetIds = Array.from(selectedIds);
-            const modal = document.getElementById('confirmModal');
-            document.getElementById('confirmTitle').textContent = "一括削除";
-            document.getElementById('confirmMessage').textContent = `${selectedIds.size} 件を削除します。`;
-            const btn = document.getElementById('confirmBtn');
-            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl shadow-xl";
-            btn.onclick = async () => {
-                const tx = db.transaction(STORE_NAME, "readwrite");
-                const store = tx.objectStore(STORE_NAME);
-                deleteTargetIds.forEach(id => store.delete(id));
-                tx.oncomplete = () => { closeConfirm(); if (isSelectMode) toggleSelectMode(); loadFromDB(); showToast("削除しました"); updateStorageUsage(); };
-            };
-            modal.classList.remove('hidden');
-        }
-
-        async function openLightbox(index, list) {
-            if (!list || list.length === 0) return;
-            currentIdx = index;
-            const item = list[index];
-            const lb = document.getElementById('lightbox');
-            const container = document.getElementById('zoomWrapper');
-            const loader = document.getElementById('mediaLoader');
-            const mc = document.getElementById('mediaContainer');
-            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
-            loader.style.display = 'flex';
-            container.querySelectorAll('img, canvas, div:not(#mediaLoader)').forEach(el => el.remove());
-            mc.scrollTop = 0; mc.scrollLeft = 0;
-            currentZoom = 1; currentRotation = 0; currentPDFPageIdx = 1;
-            lb.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            
-            wakeControls();
-
-            const decryptedData = decrypt(item.data), type = decrypt(item.type);
-            if (!decryptedData) { showToast("復号失敗"); loader.style.display = 'none'; return; }
-            if (type === 'image') {
-                const img = new Image(); 
-                img.src = decryptedData; 
-                img.onload = () => { loader.style.display = 'none'; applyZoom(); }; 
-                container.appendChild(img);
-            } else {
-                try {
-                    const bin = atob(decryptedData.split(',')[1]);
-                    const bytes = new Uint8Array(bin.length);
-                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                    currentPDF = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: true }).promise;
-                    const wrapper = document.createElement('div'); 
-                    wrapper.className = 'pdf-canvas-container'; 
-                    container.appendChild(wrapper);
-                    const dpr = window.devicePixelRatio || 1;
-                    for (let i = 1; i <= currentPDF.numPages; i++) {
-                        const page = await currentPDF.getPage(i);
-                        const ovp = page.getViewport({ scale: 1 });
-                        const scale = Math.max((mc.clientWidth * 0.9) / ovp.width, 1);
-                        const vp = page.getViewport({ scale: scale * dpr });
-                        const canvas = document.createElement('canvas');
-                        canvas.className = 'pdf-page-canvas';
-                        canvas.height = vp.height; canvas.width = vp.width;
-                        canvas.style.width = (vp.width / dpr) + "px"; 
-                        canvas.style.height = (vp.height / dpr) + "px";
-                        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport: vp }).promise;
-                        wrapper.appendChild(canvas);
-                        if (i === 1) loader.style.display = 'none';
-                    }
-                    applyZoom();
-                } catch (e) { loader.style.display = 'none'; showToast("PDF描画失敗"); }
-            }
-        }
-
-        /* 2秒後に操作パネルを薄くする機能 */
-        function wakeControls() {
-            const ctrl = document.getElementById('lightboxControls');
-            if (!ctrl) return;
-            ctrl.classList.remove('idle');
-            clearTimeout(controlsTimer);
-            controlsTimer = setTimeout(() => {
-                if (!document.getElementById('lightbox').classList.contains('hidden')) {
-                    ctrl.classList.add('idle');
-                }
-            }, 2000); 
-        }
-
-        function zoomContent(factor) {
-            wakeControls();
-            if (isSlideshowPlaying) toggleSlideshow();
-            const mc = document.getElementById('mediaContainer');
-            const wrapper = document.getElementById('zoomWrapper');
-            const centerX = (mc.scrollLeft + mc.clientWidth/2) / wrapper.scrollWidth;
-            const centerY = (mc.scrollTop + mc.clientHeight/2) / wrapper.scrollHeight;
-            currentZoom = Math.min(Math.max(currentZoom * factor, 0.5), 10);
-            applyZoom();
-            requestAnimationFrame(() => {
-                mc.scrollLeft = (centerX * wrapper.scrollWidth) - (mc.clientWidth/2);
-                mc.scrollTop = (centerY * wrapper.scrollHeight) - (mc.clientHeight/2);
-            });
-        }
-
-        function rotateContent() {
-            wakeControls();
-            currentRotation = (currentRotation + 90) % 360;
-            applyZoom();
-        }
-
-        function resetZoom() {
-            currentZoom = 1; currentRotation = 0; applyZoom();
-            const mc = document.getElementById('mediaContainer');
-            if (mc) { mc.scrollLeft = 0; mc.scrollTop = 0; }
-        }
-
-        function applyZoom() {
-            const wrapper = document.getElementById('zoomWrapper');
-            const mc = document.getElementById('mediaContainer');
-            if (wrapper && mc) {
-                wrapper.style.transform = `scale(${currentZoom}) rotate(${currentRotation}deg)`;
-                const isOverflow = (wrapper.offsetHeight * currentZoom > mc.clientHeight) || (wrapper.offsetWidth * currentZoom > mc.clientWidth);
-                mc.style.alignItems = (isOverflow || currentZoom > 1) ? 'flex-start' : 'center';
-                mc.style.justifyContent = (isOverflow || currentZoom > 1) ? 'flex-start' : 'center';
-            }
-        }
-
-        function handlePlayClick() {
-            startSlideshow(selectedIds.size > 0);
-            if (isSelectMode) toggleSelectMode();
-        }
-
-        function startSlideshow(onlySelected) {
-            const list = getSortedLibrary();
-            slideshowList = onlySelected ? list.filter(item => selectedIds.has(item.id)) : list;
-            
-            if (slideshowList.length === 0) return showToast("再生可能な項目がありません");
-            
-            isSlideshowPlaying = true;
-            openLightbox(0, slideshowList);
-            updateSlideshowUI();
-            resetSlideshowTimer();
-        }
-
-        function toggleSlideshow() {
-            isSlideshowPlaying = !isSlideshowPlaying;
-            if (isSlideshowPlaying) {
-                if (slideshowList.length === 0) slideshowList = getSortedLibrary();
-                resetSlideshowTimer();
-            } else { stopSlideshowTimer(); }
-            updateSlideshowUI();
-            wakeControls();
-        }
-
-        function resetSlideshowTimer() {
-            stopSlideshowTimer();
-            if (!isSlideshowPlaying) return;
-            const pb = document.getElementById('progressBar');
-            slideshowProgressInterval = setInterval(() => {
-                slideTimeElapsed += 100;
-                // Vertical progress: sets height
-                if (pb) pb.style.height = Math.min((slideTimeElapsed / SLIDE_DURATION) * 100, 100) + '%';
-            }, 100);
-            slideshowTimer = setTimeout(advanceSlideshow, SLIDE_DURATION);
-        }
-
-        function stopSlideshowTimer() {
-            clearTimeout(slideshowTimer);
-            clearInterval(slideshowProgressInterval);
-            slideTimeElapsed = 0;
-            if (document.getElementById('progressBar')) document.getElementById('progressBar').style.height = '0%';
-        }
-
-        async function advanceSlideshow() {
-            if (currentPDF && currentPDFPageIdx < currentPDF.numPages) {
-                currentPDFPageIdx++;
-                const mc = document.getElementById('mediaContainer');
-                const canvas = document.querySelectorAll('.pdf-page-canvas')[currentPDFPageIdx-1];
-                if (canvas) mc.scrollTo({ top: canvas.offsetTop - 40, behavior: 'smooth' });
-                resetSlideshowTimer();
-                return;
-            }
-            currentPDFPageIdx = 1;
-            const currentList = slideshowList.length > 0 ? slideshowList : getSortedLibrary();
-            currentIdx = (currentIdx + 1) % currentList.length;
-            await openLightbox(currentIdx, currentList);
-            resetSlideshowTimer();
-        }
-
-        function updateSlideshowUI() {
-            document.getElementById('playIcon').classList.toggle('hidden', isSlideshowPlaying);
-            document.getElementById('pauseIcon').classList.toggle('hidden', !isSlideshowPlaying);
-            document.getElementById('slideshowBtn').classList.toggle('active', isSlideshowPlaying);
-        }
-
-        async function closeLightboxUI() {
-            if (isSlideshowPlaying) toggleSlideshow();
-            document.getElementById('lightbox').classList.add('hidden'); 
-            document.body.style.overflow = ''; 
-            resetZoom();
-            if (currentPDF) { await currentPDF.destroy(); currentPDF = null; }
-        }
-
-        function lockVault() {
-            sessionKey = null;
-            currentUserId = null;
-            library = [];
-            searchQuery = "";
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.value = "";
-            const grid = document.getElementById('fileGrid');
-            if (grid) grid.innerHTML = '';
-            document.getElementById('mainContent').classList.add('hidden', 'opacity-0');
-            document.getElementById('authOverlay').style.display = 'flex';
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            showToast("ログアウトしました");
-        }
-
-        function toggleFocusMode() { document.body.classList.toggle('hide-header'); }
-        function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-        
-        function requestSystemReset() {
-            const modal = document.getElementById('confirmModal');
-            const title = document.getElementById('confirmTitle');
-            const msg = document.getElementById('confirmMessage');
-            const btn = document.getElementById('confirmBtn');
-            title.textContent = "全システム初期化";
-            msg.textContent = "すべてのパスワード、すべてのデータを消去して初期状態に戻します。よろしいですか？";
-            btn.textContent = "初期化を実行";
-            btn.className = "flex-1 bg-red-600 text-white font-bold py-5 rounded-2xl hover:bg-red-500 transition-all shadow-xl";
-            btn.onclick = () => {
-                msg.textContent = "【最終確認】この端末の全ユーザーのデータが失われます。";
-                btn.textContent = "確定";
-                btn.onclick = () => {
-                    if (db) { db.close(); db = null; }
-                    const req = indexedDB.deleteDatabase(DB_NAME);
-                    req.onsuccess = () => { setTimeout(() => location.reload(), 1000); };
-                };
-            };
-            modal.classList.remove('hidden');
-        }
-
-        function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); deleteTargetIds = []; }
-        function toggleUploadModal() { document.getElementById('uploadModal').classList.toggle('hidden'); }
-        function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.remove('opacity-0', 'translate-y-28'); setTimeout(() => t.classList.add('opacity-0', 'translate-y-28'), 3000); }
-        async function updateStorageUsage() {
-            if (navigator.storage && navigator.storage.estimate) {
-                const est = await navigator.storage.estimate();
-                const used = (est.usage / (1024 * 1024)).toFixed(1);
-                const free = ((est.quota - est.usage) / (1024*1024*1024)).toFixed(1);
-                document.getElementById('storageUsage').textContent = `STORAGE: ${used}MB USED / ${free}GB FREE`;
-            }
-        }
-
-        async function handleFiles(files) {
-            if (!files.length || !sessionKey) return;
-            const now = Date.now();
-            let addedCount = 0;
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (!file.type.match('image.*') && file.type !== 'application/pdf') continue;
-
-                const data = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-
-                let thumb = "";
-                if (file.type.match('image.*')) {
-                    thumb = await createThumbnail(data);
-                } else if (file.type === 'application/pdf') {
-                    thumb = await createPDFThumbnail(data);
-                }
-
-                const asset = {
-                    id: generateId(),
-                    ownerId: currentUserId,
-                    name: encrypt(file.name),
-                    type: encrypt(file.type.match('image.*') ? 'image' : 'pdf'),
-                    size: encrypt(file.size.toString()),
-                    thumbnail: encrypt(thumb),
-                    data: encrypt(data),
-                    timestamp: now + i,
-                    fileModified: encrypt(file.lastModified.toString()),
-                    isFavorite: false
-                };
-
-                try {
-                    await new Promise((resolve, reject) => {
-                        const tx = db.transaction(STORE_NAME, "readwrite");
-                        const store = tx.objectStore(STORE_NAME);
-                        const request = store.put(asset);
-                        tx.oncomplete = () => resolve();
-                        tx.onerror = () => reject(tx.error);
+                    // 遅延復号
+                    Promise.all([
+                        asyncCrypto('decrypt', item.thumbnail, state.key),
+                        asyncCrypto('decrypt', item.name, state.key)
+                    ]).then(([thumbSrc, nameStr]) => {
+                        const img = el.querySelector('img');
+                        if (thumbSrc) {
+                            img.src = thumbSrc;
+                            img.classList.remove('hidden');
+                            el.querySelector('.loading-text').parentElement.classList.add('hidden');
+                        } else {
+                            // サムネイルなし（PDF等）の場合のフォールバック表示
+                            el.querySelector('.loading-text').textContent = "FILE";
+                        }
+                        el.querySelector('.name-text').textContent = nameStr;
+                        el.dataset.name = nameStr;
+                    }).catch(() => {
+                        el.querySelector('.loading-text').textContent = "ERR";
                     });
-                    addedCount++;
-                } catch (err) {
-                    console.error("保存失敗:", err);
                 }
+            },
+            toggleSelectionMode: () => {
+                state.isSelectionMode = !state.isSelectionMode;
+                state.selected.clear();
+                ui.updateSelectionUI();
+                
+                const btn = document.getElementById('selectBtn');
+                btn.classList.toggle('text-indigo-400', state.isSelectionMode);
+                document.getElementById('selectionActions').classList.toggle('hidden', !state.isSelectionMode);
+            },
+            updateSelectionUI: () => {
+                for(let card of document.querySelectorAll('.asset-card')) {
+                    if (state.selected.has(card.dataset.id)) card.classList.add('selected');
+                    else card.classList.remove('selected');
+                }
+            },
+            closeViewer: () => {
+                document.getElementById('viewer').classList.add('hidden');
+                document.getElementById('viewerContainer').innerHTML = '';
             }
+        };
 
-            if (addedCount > 0) {
-                showToast(`${addedCount}件のファイルを暗号化保存しました`);
-                await loadFromDB();
-                if(!document.getElementById('uploadModal').classList.contains('hidden')) toggleUploadModal();
-                updateStorageUsage();
+        const viewer = {
+            show: (data, type, name) => {
+                const con = document.getElementById('viewerContainer');
+                con.innerHTML = '';
+                document.getElementById('viewerFileName').textContent = name;
+                
+                if (type.startsWith('image')) {
+                    const img = new Image();
+                    img.src = data;
+                    img.className = 'viewer-content';
+                    con.appendChild(img);
+                } else if (type === 'application/pdf') {
+                    // 簡易PDF表示
+                    const embed = document.createElement('iframe');
+                    embed.src = data;
+                    embed.className = 'w-full h-full border-none bg-white';
+                    con.appendChild(embed);
+                }
+                document.getElementById('viewer').classList.remove('hidden');
             }
-        }
+        };
 
-        function createThumbnail(dataUrl) {
-            return new Promise(resolve => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const size = 300;
-                    const scale = Math.max(size / img.width, size / img.height);
-                    canvas.width = size; canvas.height = size;
-                    const x = (size - img.width * scale) / 2;
-                    const y = (size - img.height * scale) / 2;
-                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-                    resolve(canvas.toDataURL('image/jpeg', 0.7));
-                };
-                img.src = dataUrl;
-            });
-        }
-
-        async function createPDFThumbnail(dataUrl) {
-            try {
-                const bin = atob(dataUrl.split(',')[1]);
-                const bytes = new Uint8Array(bin.length);
-                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                const pdf = await pdfjsLib.getDocument({ data: bytes, cMapUrl: CMAP_URL, cMapPacked: true }).promise;
-                const page = await pdf.getPage(1);
-                const vp = page.getViewport({ scale: 0.5 });
-                const canvas = document.createElement('canvas');
-                canvas.width = vp.width; canvas.height = vp.height;
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                return canvas.toDataURL('image/jpeg', 0.7);
-            } catch (e) { return ""; }
-        }
-
-        document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
-        document.getElementById('fileInput').onchange = e => handleFiles(e.target.files);
-        document.getElementById('nextBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx + 1) % list.length, list); };
-        document.getElementById('prevBtn').onclick = () => { if(isSlideshowPlaying) toggleSlideshow(); const list = getSortedLibrary(); openLightbox((currentIdx - 1 + list.length) % list.length, list); };
-        
-        window.addEventListener('dragover', e => { 
-            e.preventDefault(); 
-            if (sessionKey) {
-                const modal = document.getElementById('uploadModal');
-                if (modal.classList.contains('hidden')) toggleUploadModal();
-                document.getElementById('dropZone').classList.add('drag-over');
+        const utils = {
+            createThumb: (src) => {
+                return new Promise(resolve => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const cvs = document.createElement('canvas');
+                        const dim = 200;
+                        let w = img.width, h = img.height;
+                        if (w > h) { h = h * (dim/w); w = dim; } else { w = w * (dim/h); h = dim; }
+                        cvs.width = w; cvs.height = h;
+                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(cvs.toDataURL('image/jpeg', 0.5));
+                    };
+                    img.src = src;
+                });
             }
-        });
-        window.addEventListener('dragleave', e => { 
-            if (e.relatedTarget === null) document.getElementById('dropZone').classList.remove('drag-over');
-        });
-        window.addEventListener('drop', e => { 
-            e.preventDefault(); 
-            document.getElementById('dropZone').classList.remove('drag-over');
-            if (sessionKey) handleFiles(e.dataTransfer.files);
-        });
+        };
 
-        window.addEventListener('keydown', e => {
-            if (document.getElementById('lightbox').classList.contains('hidden')) return;
-            wakeControls();
-            if (e.key === 'Escape') closeLightboxUI();
-            if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
-            if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
-            if (e.key === ' ') toggleSlideshow();
-        });
-        ['mousemove', 'touchstart', 'scroll'].forEach(evName => {
-            const container = document.getElementById('mediaContainer');
-            if (container) container.addEventListener(evName, wakeControls);
-        });
+        // Init
+        app.init();
+
     </script>
 </body>
 </html>
