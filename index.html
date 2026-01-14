@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure Asset Explorer - Lite V6 (JP)</title>
+    <title>Secure Asset Explorer - Lite V6 (Fixed Core)</title>
     <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -17,25 +17,12 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-        /* Solid UI (Lightweight) */
-        .solid-panel {
-            background: #0f172a;
-            border-bottom: 1px solid #1e293b;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .floating-panel {
-            background: #1e293b;
-            border: 1px solid #334155;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-        }
-
         /* Asset Grid */
         .asset-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 0.75rem;
-            padding-bottom: 120px;
+            padding-bottom: 140px;
         }
         @media (min-width: 768px) { .asset-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; } }
 
@@ -51,11 +38,28 @@
         .asset-card.selected { border-color: #6366f1; box-shadow: 0 0 0 2px #6366f1; }
 
         /* Viewer */
-        .viewer-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        .viewer-content { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .viewer-container { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; overflow: auto; background: #000; position: relative; }
+        .viewer-content { transition: transform 0.3s ease; transform-origin: center center; max-width: 95vw; }
+        .pdf-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px; transition: transform 0.3s ease; }
+        .pdf-page { max-width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         
+        /* Idle Fade Effect */
+        .idle-fade { transition: opacity 0.5s ease; opacity: 1; }
+        #viewer.idle .idle-fade { opacity: 0.1; pointer-events: none; }
+        #viewer.idle .idle-fade:hover { opacity: 1; pointer-events: auto; }
+
+        /* Bottom Toolbar Style */
+        .bottom-toolbar {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+        }
+
         .toast { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        .shake { animation: shake 0.2s ease-in-out 0s 2; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col text-slate-200">
@@ -71,11 +75,12 @@
         <div class="w-full max-w-sm space-y-6 text-center">
             <h1 class="text-2xl font-black tracking-tight text-white">SECURE<span class="text-indigo-500">VAULT</span> <span class="text-xs text-slate-600">Lite v6</span></h1>
             
-            <div id="loginForm" class="space-y-3">
+            <div id="loginForm" class="space-y-4">
                 <input type="password" id="masterPass" class="w-full bg-slate-900 border border-slate-800 text-center text-white text-lg rounded-lg py-4 px-4 focus:border-indigo-500 outline-none transition-colors" placeholder="パスワード">
                 <button onclick="app.login()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-lg shadow-lg active:scale-[0.98] text-sm">ロック解除</button>
-                <div class="pt-2">
-                    <button onclick="ui.toggleCreateAccount()" class="text-xs text-slate-500 hover:text-white underline">初期化 / 新規作成</button>
+                <div class="pt-4 flex flex-col gap-2">
+                    <button onclick="ui.toggleCreateAccount()" class="text-xs text-slate-500 hover:text-white underline">新規作成</button>
+                    <button onclick="app.resetSystem()" class="text-[10px] text-red-900 hover:text-red-500 font-bold tracking-widest mt-4">⚠ システム初期化 (データ全消去)</button>
                 </div>
             </div>
 
@@ -107,7 +112,7 @@
             
             <div class="flex items-center gap-2">
                  <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500 w-24 focus:w-32 transition-all">
-                <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
+                <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
             </div>
         </header>
 
@@ -120,23 +125,53 @@
             </div>
         </main>
 
-        <!-- Bottom Actions -->
-        <div class="floating-panel fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full px-4 py-2 flex items-center gap-4 z-30">
-            <button onclick="document.getElementById('fileInput').click()" class="text-indigo-400 hover:text-white flex flex-col items-center gap-1">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span class="text-[9px] font-bold">追加</span>
-            </button>
-            <div class="w-px h-6 bg-slate-700"></div>
-            <button onclick="ui.toggleSelectionMode()" id="selectBtn" class="text-slate-400 hover:text-white flex flex-col items-center gap-1">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span class="text-[9px] font-bold">選択</span>
-            </button>
-            
-            <div id="selectionActions" class="hidden flex items-center gap-4 border-l border-slate-700 pl-4">
-                 <button onclick="app.deleteSelected()" class="text-red-400 hover:text-red-200 flex flex-col items-center gap-1">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    <span class="text-[9px] font-bold">削除</span>
-                 </button>
+        <!-- Bottom Integrated Toolbar -->
+        <div class="fixed bottom-6 left-4 right-4 z-30 flex justify-center pointer-events-none">
+            <div class="bottom-toolbar pointer-events-auto px-6 py-3 flex flex-wrap justify-center items-center gap-6 rounded-2xl">
+                
+                <!-- Info Section -->
+                <div class="flex items-center gap-3 border-r border-slate-700 pr-6 hidden sm:flex">
+                    <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-xs text-white leading-tight">保管庫 Lite</h2>
+                        <p id="itemCountDisplay" class="text-[10px] text-slate-400 font-mono">0 Items</p>
+                    </div>
+                </div>
+
+                <!-- Main Actions -->
+                <button onclick="document.getElementById('fileInput').click()" class="text-indigo-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <span class="text-[9px] font-bold">追加</span>
+                </button>
+                
+                <button onclick="ui.toggleSelectionMode()" id="selectBtn" class="text-slate-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="text-[9px] font-bold">選択</span>
+                </button>
+
+                <div id="selectionActions" class="hidden flex items-center">
+                     <button onclick="app.deleteSelected()" class="text-red-400 hover:text-red-200 flex flex-col items-center gap-1 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span class="text-[9px] font-bold">削除</span>
+                     </button>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-8 w-px bg-slate-700"></div>
+
+                <!-- Search & Lock -->
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800/50 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white outline-none focus:border-indigo-500 w-24 focus:w-40 transition-all">
+                        <svg class="w-4 h-4 text-slate-500 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg hover:bg-slate-700 transition-colors" title="ロック">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </button>
+                </div>
+
             </div>
         </div>
         
@@ -145,52 +180,80 @@
 
     <!-- Viewer Modal -->
     <div id="viewer" class="fixed inset-0 z-40 bg-black hidden flex-col">
-        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between z-50 bg-black/50">
-            <button onclick="ui.closeViewer()" class="p-2 bg-slate-800 rounded-full"><svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-            <div class="text-white text-xs font-mono self-center px-4" id="viewerFileName"></div>
-        </div>
         <div class="viewer-container" id="viewerContainer"></div>
+
+        <!-- Navigation Buttons -->
+        <button onclick="viewer.nav(-1)" class="idle-fade absolute left-6 top-1/2 -translate-y-1/2 p-5 bg-slate-800/80 rounded-full hover:bg-slate-700 text-white z-50 transition-all shadow-lg backdrop-blur-sm">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="viewer.nav(1)" class="idle-fade absolute right-6 top-1/2 -translate-y-1/2 p-5 bg-slate-800/80 rounded-full hover:bg-slate-700 text-white z-50 transition-all shadow-lg backdrop-blur-sm">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+        </button>
+
+        <!-- Bottom Control Bar -->
+        <div class="idle-fade absolute bottom-0 left-0 right-0 p-6 flex justify-center items-center z-50 pointer-events-none">
+            <div class="pointer-events-auto bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700 p-2 flex items-center gap-4 shadow-2xl">
+                <button onclick="ui.closeViewer()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center gap-2 transition-colors">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span class="text-white font-bold text-sm">閉じる</span>
+                </button>
+                
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-white text-xs font-mono truncate px-2 max-w-[200px]" id="viewerFileName"></div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                
+                <button onclick="viewer.rotate()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center gap-2 transition-colors">
+                    <span class="text-white font-bold text-sm">回転</span>
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-xl font-bold text-xs z-[100] hidden whitespace-nowrap border border-slate-700"></div>
+    <div id="toast" class="fixed bottom-32 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-xl font-bold text-xs z-[100] hidden whitespace-nowrap border border-slate-700"></div>
 
     <script>
-        /* V6 LITE EDITION
-           - Web Worker廃止（互換性重視）
-           - 重いCSS演出の削除
-           - V6のDB設計（メタデータ分離）は維持
-        */
+        // PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const CMAP_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
 
-        // --- CRYPTO UTILS (MAIN THREAD) ---
-        // UIフリーズを防ぐため、PromiseでラップしsetTimeoutでイベントループを回す
-        const asyncCrypto = async (action, payload, secret, salt = null, iterations = null) => {
-            await new Promise(r => setTimeout(r, 5)); // UI更新のために少し待機
-            
+        // Global Error Handler
+        window.onerror = function(msg, url, line) {
+            console.error("Global Error:", msg);
+            document.getElementById('globalLoader').style.display = 'none';
+        };
+
+        // --- CRYPTO LOGIC (Restored from Working Version) ---
+        // UIブロックを防ぐために非同期ラップするが、ロジック自体は動いていたコードと全く同じにする
+        const asyncCrypto = async (action, payload, secret, salt = null, iterations = 10000) => {
+            // UIスレッドをブロックしないよう一瞬待つ
+            await new Promise(r => setTimeout(r, 10));
+
             try {
                 if (action === 'deriveKey') {
-                    // 鍵生成は重いので、ここでのみ同期的に実行（ローディング表示済み前提）
-                    return CryptoJS.PBKDF2(payload, salt, { keySize: 256/32, iterations: 5000 }).toString(); // 反復回数を5000に調整
+                    // 重要：動いていたコード同様、WordArrayそのものを返す（.toString()しない）
+                    return CryptoJS.PBKDF2(payload, salt, { keySize: 256/32, iterations: iterations });
                 } 
                 else if (action === 'encrypt') {
+                    // secretはWordArrayであることを期待
                     const iv = CryptoJS.lib.WordArray.random(128/8);
                     const encrypted = CryptoJS.AES.encrypt(payload, secret, { iv: iv });
                     return iv.toString() + ":" + encrypted.toString();
                 }
                 else if (action === 'decrypt') {
                     const parts = payload.split(":");
-                    if (parts.length < 2) throw new Error("Invalid format");
+                    if (parts.length < 2) return null;
                     const iv = CryptoJS.enc.Hex.parse(parts[0]);
                     const bytes = CryptoJS.AES.decrypt(parts[1], secret, { iv: iv });
                     const str = bytes.toString(CryptoJS.enc.Utf8);
-                    // 【修正】空文字（サムネイルなし等）は正常として許可する
-                    if (str === "" && payload) return str; 
-                    if (!str && str !== "") throw new Error("Decryption failed");
+                    // 空文字チェックなど厳密にしすぎると失敗扱いになる場合があるので緩める
+                    if (!str && str !== "") return null; 
                     return str;
                 }
             } catch (e) {
                 console.error("Crypto Error:", e);
-                throw e;
+                return null;
             }
         };
 
@@ -229,6 +292,7 @@
             },
             getMeta: async (userId) => {
                 return new Promise(resolve => {
+                    if (!state.db) return resolve([]);
                     const tx = state.db.transaction(STORES.META, 'readonly');
                     const index = tx.objectStore(STORES.META).index('ownerId');
                     const req = index.getAll(userId);
@@ -264,50 +328,61 @@
         // --- APP LOGIC ---
         const app = {
             init: async () => {
-                await dbMgr.init();
+                try {
+                    await dbMgr.init();
+                } catch(e) {
+                    console.error(e);
+                    ui.toast("DBエラー。初期化してください。");
+                }
             },
             
             login: async () => {
                 const pass = document.getElementById('masterPass').value;
-                if(pass.length < 4) return ui.toast("パスワードが短すぎます");
-                
+                if(pass.length < 4) {
+                    ui.showError("パスワードが短すぎます");
+                    return;
+                }
                 ui.loader(true, "認証処理中...");
-                // UI描画のために少し待つ
-                setTimeout(async () => {
+                
+                try {
+                    // UI更新待機
+                    await new Promise(r => setTimeout(r, 100));
+
                     const hash = CryptoJS.SHA256(pass).toString();
                     const configKey = "cfg_" + hash;
 
-                    try {
-                        const tx = state.db.transaction(STORES.CONFIG, 'readonly');
-                        const req = tx.objectStore(STORES.CONFIG).get(configKey);
-                        
-                        req.onsuccess = async () => {
-                            const config = req.result;
-                            if (!config) {
-                                ui.loader(false);
-                                ui.toast("保管庫が見つかりません");
-                                return;
-                            }
+                    const tx = state.db.transaction(STORES.CONFIG, 'readonly');
+                    const req = tx.objectStore(STORES.CONFIG).get(configKey);
+                    
+                    req.onsuccess = async () => {
+                        const config = req.result;
+                        if (!config) {
+                            ui.loader(false);
+                            ui.showError("保管庫が見つかりません");
+                            return;
+                        }
 
-                            try {
-                                const derivedKey = await asyncCrypto('deriveKey', pass, null, config.salt);
-                                const decryptedTest = await asyncCrypto('decrypt', config.challenge, derivedKey);
-                                
-                                if (decryptedTest === "VERIFIED") {
-                                    state.key = derivedKey;
-                                    state.userId = hash;
-                                    app.unlockInterface();
-                                } else {
-                                    throw new Error();
-                                }
-                            } catch (e) {
-                                ui.loader(false);
-                                ui.toast("パスワードが違います");
-                                document.getElementById('masterPass').value = '';
-                            }
-                        };
-                    } catch(e) { ui.loader(false); ui.toast("システムエラー"); }
-                }, 100);
+                        // Derive key (returns WordArray)
+                        const derivedKey = await asyncCrypto('deriveKey', pass, null, config.salt);
+                        // Decrypt challenge
+                        const decryptedTest = await asyncCrypto('decrypt', config.challenge, derivedKey);
+                        
+                        if (decryptedTest === "OK") { // 元コードは "OK" で判定していたので合わせる
+                            state.key = derivedKey;
+                            state.userId = hash;
+                            app.unlockInterface();
+                        } else {
+                            ui.loader(false);
+                            ui.showError("パスワードが違います");
+                            document.getElementById('masterPass').value = '';
+                        }
+                    };
+                    req.onerror = () => { ui.loader(false); ui.toast("DB読み込みエラー"); };
+                } catch (e) {
+                    console.error("Login Error:", e);
+                    ui.loader(false);
+                    ui.toast("予期せぬエラー");
+                }
             },
 
             createAccount: async () => {
@@ -316,24 +391,51 @@
                 if (p1 !== p2 || p1.length < 4) return ui.toast("パスワードが無効です");
 
                 ui.loader(true, "保管庫を作成中...");
-                setTimeout(async () => {
-                    const hash = CryptoJS.SHA256(p1).toString();
-                    const salt = CryptoJS.lib.WordArray.random(128/8).toString();
-                    
-                    const derivedKey = await asyncCrypto('deriveKey', p1, null, salt);
-                    const challenge = await asyncCrypto('encrypt', "VERIFIED", derivedKey);
+                
+                try {
+                    await new Promise(r => setTimeout(r, 100));
 
-                    const config = { key: "cfg_" + hash, salt, challenge };
+                    const hash = CryptoJS.SHA256(p1).toString();
+                    // Check existing
+                    const txCheck = state.db.transaction(STORES.CONFIG, 'readonly');
+                    const reqCheck = txCheck.objectStore(STORES.CONFIG).get("cfg_" + hash);
                     
-                    const tx = state.db.transaction(STORES.CONFIG, 'readwrite');
-                    tx.objectStore(STORES.CONFIG).put(config);
-                    tx.oncomplete = () => {
-                        ui.loader(false);
-                        ui.toast("作成完了。ログインしてください");
-                        ui.toggleCreateAccount();
-                        document.getElementById('masterPass').value = '';
+                    reqCheck.onsuccess = async () => {
+                        if (reqCheck.result) {
+                            ui.loader(false);
+                            ui.toast("既に存在するパスワードです");
+                            return;
+                        }
+
+                        const salt = CryptoJS.lib.WordArray.random(128/8).toString();
+                        const derivedKey = await asyncCrypto('deriveKey', p1, null, salt); // WordArray
+                        const challenge = await asyncCrypto('encrypt', "OK", derivedKey); // "OK" を暗号化
+
+                        const config = { key: "cfg_" + hash, salt, challenge };
+                        
+                        const tx = state.db.transaction(STORES.CONFIG, 'readwrite');
+                        tx.objectStore(STORES.CONFIG).put(config);
+                        
+                        tx.oncomplete = () => {
+                            ui.loader(false);
+                            ui.toast("作成完了。ログインしてください");
+                            ui.toggleCreateAccount();
+                            document.getElementById('masterPass').value = '';
+                        };
                     };
-                }, 100);
+                } catch(e) {
+                    console.error("Create Error:", e);
+                    ui.loader(false);
+                    ui.toast("作成に失敗しました");
+                }
+            },
+
+            resetSystem: () => {
+                if(!confirm("【警告】すべてのデータが消去されます。\n本当によろしいですか？")) return;
+                if (state.db) state.db.close();
+                const req = indexedDB.deleteDatabase(DB_NAME);
+                req.onsuccess = () => { alert("システムを初期化しました。"); location.reload(); };
+                req.onerror = () => alert("初期化に失敗しました。");
             },
 
             unlockInterface: async () => {
@@ -355,19 +457,18 @@
                 const files = Array.from(input.files);
                 ui.loader(true, "ファイルを処理中...");
 
-                // 1つずつ直列処理してUIフリーズを回避
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    ui.updateLoaderMsg(`暗号化中... (${i + 1}/${files.length})`);
-                    
-                    try {
+                try {
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        ui.updateLoaderMsg(`暗号化中... (${i + 1}/${files.length})`);
+                        await new Promise(r => setTimeout(r, 10));
+
                         const reader = new FileReader();
                         const dataUrl = await new Promise(r => { reader.onload = e => r(e.target.result); reader.readAsDataURL(file); });
 
                         let thumb = "";
-                        if (file.type.startsWith('image')) {
-                            thumb = await utils.createThumb(dataUrl);
-                        }
+                        if (file.type.startsWith('image')) { thumb = await utils.createThumb(dataUrl); }
+                        else if (file.type === 'application/pdf') { thumb = await utils.createPDFThumb(dataUrl); }
 
                         const encName = await asyncCrypto('encrypt', file.name, state.key);
                         const encType = await asyncCrypto('encrypt', file.type, state.key);
@@ -386,46 +487,46 @@
                         };
 
                         await dbMgr.saveAsset(meta, encData);
-                    } catch (e) {
-                        console.error(e);
                     }
+                    ui.toast("保存完了");
+                } catch (e) {
+                    console.error("Upload Error:", e);
+                    ui.toast("アップロードエラー");
+                } finally {
+                    input.value = "";
+                    await app.refreshLibrary();
+                    ui.loader(false);
                 }
-
-                input.value = "";
-                await app.refreshLibrary();
-                ui.loader(false);
-                ui.toast("保存完了");
             },
 
             openItem: async (id) => {
                 if (state.isSelectionMode) return app.toggleSelect(id);
-                
+                viewer.currentIndex = state.assets.findIndex(a => a.id === id);
+
                 ui.loader(true, "復号して開いています...");
-                setTimeout(async () => {
+                try {
+                    await new Promise(r => setTimeout(r, 50));
+
                     const meta = state.assets.find(a => a.id === id);
                     const encContent = await dbMgr.getContent(id);
                     
-                    if (!encContent) {
-                        ui.loader(false);
-                        return ui.toast("データが見つかりません");
-                    }
+                    if (!encContent) throw new Error("Data not found");
 
-                    try {
-                        const decryptedData = await asyncCrypto('decrypt', encContent, state.key);
-                        const decryptedType = await asyncCrypto('decrypt', meta.type, state.key);
-                        const decryptedName = await asyncCrypto('decrypt', meta.name, state.key);
-                        
-                        viewer.show(decryptedData, decryptedType, decryptedName);
-                        ui.loader(false);
-                    } catch(e) {
-                        ui.loader(false);
-                        ui.toast("復号エラー");
-                    }
-                }, 50);
+                    const decryptedData = await asyncCrypto('decrypt', encContent, state.key);
+                    const decryptedType = await asyncCrypto('decrypt', meta.type, state.key);
+                    const decryptedName = await asyncCrypto('decrypt', meta.name, state.key);
+                    
+                    await viewer.show(decryptedData, decryptedType, decryptedName);
+                } catch(e) {
+                    console.error("Open Error:", e);
+                    ui.toast("ファイルを開けませんでした");
+                } finally {
+                    ui.loader(false);
+                }
             },
 
             lock: () => {
-                location.reload(); // 最も確実なロック方法（メモリクリア）
+                location.reload(); 
             },
             
             toggleSelect: (id) => {
@@ -467,10 +568,15 @@
             toast: (msg) => {
                 const t = document.getElementById('toast');
                 t.textContent = msg;
-                // 【修正】inline-styleのdisplay設定を削除し、classList制御のみにする
                 t.style.display = ''; 
                 t.classList.remove('hidden');
                 setTimeout(() => t.classList.add('hidden'), 3000);
+            },
+            showError: (msg) => {
+                const input = document.getElementById('masterPass');
+                input.classList.add('shake');
+                ui.toast(msg);
+                setTimeout(() => input.classList.remove('shake'), 400);
             },
             toggleCreateAccount: () => {
                 document.getElementById('loginForm').classList.toggle('hidden');
@@ -482,13 +588,15 @@
                 
                 if (state.assets.length === 0) {
                     document.getElementById('emptyState').classList.remove('hidden');
-                    document.getElementById('itemCount').textContent = "0 件";
+                    document.getElementById('itemCount').textContent = "0 Items";
+                    document.getElementById('itemCountDisplay').textContent = "0 Items";
                     return;
                 }
                 document.getElementById('emptyState').classList.add('hidden');
-                document.getElementById('itemCount').textContent = `${state.assets.length} 件`;
+                const countText = `${state.assets.length} Items`;
+                document.getElementById('itemCount').textContent = countText;
+                document.getElementById('itemCountDisplay').textContent = countText;
 
-                // バッチ処理でサムネイルを復号・描画
                 for (let i = 0; i < state.assets.length; i++) {
                     const item = state.assets[i];
                     const el = document.createElement('div');
@@ -506,7 +614,6 @@
                     el.onclick = () => app.openItem(item.id);
                     grid.appendChild(el);
 
-                    // 遅延復号
                     Promise.all([
                         asyncCrypto('decrypt', item.thumbnail, state.key),
                         asyncCrypto('decrypt', item.name, state.key)
@@ -517,7 +624,6 @@
                             img.classList.remove('hidden');
                             el.querySelector('.loading-text').parentElement.classList.add('hidden');
                         } else {
-                            // サムネイルなし（PDF等）の場合のフォールバック表示
                             el.querySelector('.loading-text').textContent = "FILE";
                         }
                         el.querySelector('.name-text').textContent = nameStr;
@@ -545,14 +651,20 @@
             closeViewer: () => {
                 document.getElementById('viewer').classList.add('hidden');
                 document.getElementById('viewerContainer').innerHTML = '';
+                viewer.stopIdleTimer(); 
             }
         };
 
         const viewer = {
-            show: (data, type, name) => {
+            rotation: 0,
+            currentIndex: 0,
+            idleTimer: null,
+            
+            show: async (data, type, name) => {
                 const con = document.getElementById('viewerContainer');
                 con.innerHTML = '';
                 document.getElementById('viewerFileName').textContent = name;
+                viewer.rotation = 0;
                 
                 if (type.startsWith('image')) {
                     const img = new Image();
@@ -560,13 +672,82 @@
                     img.className = 'viewer-content';
                     con.appendChild(img);
                 } else if (type === 'application/pdf') {
-                    // 簡易PDF表示
-                    const embed = document.createElement('iframe');
-                    embed.src = data;
-                    embed.className = 'w-full h-full border-none bg-white';
-                    con.appendChild(embed);
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'pdf-wrapper';
+                    con.appendChild(wrapper);
+                    
+                    try {
+                        const pdfData = atob(data.split(',')[1]);
+                        const bytes = new Uint8Array(pdfData.length);
+                        for (let i = 0; i < pdfData.length; i++) bytes[i] = pdfData.charCodeAt(i);
+
+                        const loadingTask = pdfjsLib.getDocument({
+                            data: bytes,
+                            cMapUrl: CMAP_URL,
+                            cMapPacked: true
+                        });
+                        const pdf = await loadingTask.promise;
+                        
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            const viewport = page.getViewport({scale: 1.5});
+                            const canvas = document.createElement('canvas');
+                            canvas.className = 'pdf-page';
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            
+                            wrapper.appendChild(canvas);
+                            
+                            await page.render({
+                                canvasContext: context,
+                                viewport: viewport
+                            }).promise;
+                        }
+                    } catch(e) {
+                        console.error(e);
+                        wrapper.innerHTML = '<p class="text-white">PDF表示エラー</p>';
+                    }
                 }
                 document.getElementById('viewer').classList.remove('hidden');
+                viewer.resetIdleTimer();
+            },
+            
+            rotate: () => {
+                viewer.rotation = (viewer.rotation + 90) % 360;
+                const content = document.querySelector('.viewer-content') || document.querySelector('.pdf-wrapper');
+                if (content) {
+                    content.style.transform = `rotate(${viewer.rotation}deg)`;
+                }
+                viewer.resetIdleTimer();
+            },
+
+            nav: (dir) => {
+                viewer.resetIdleTimer();
+                if (state.assets.length <= 1) return;
+                const len = state.assets.length;
+                let newIdx = (viewer.currentIndex + dir);
+                if (newIdx < 0) newIdx = len - 1;
+                if (newIdx >= len) newIdx = 0;
+                
+                const nextAsset = state.assets[newIdx];
+                app.openItem(nextAsset.id);
+            },
+
+            resetIdleTimer: () => {
+                const viewerEl = document.getElementById('viewer');
+                viewerEl.classList.remove('idle');
+                clearTimeout(viewer.idleTimer);
+                viewer.idleTimer = setTimeout(() => {
+                    if (!viewerEl.classList.contains('hidden')) {
+                        viewerEl.classList.add('idle');
+                    }
+                }, 2000); 
+            },
+
+            stopIdleTimer: () => {
+                clearTimeout(viewer.idleTimer);
+                document.getElementById('viewer').classList.remove('idle');
             }
         };
 
@@ -585,8 +766,52 @@
                     };
                     img.src = src;
                 });
+            },
+            createPDFThumb: async (dataUrl) => {
+                try {
+                    const pdfData = atob(dataUrl.split(',')[1]);
+                    const bytes = new Uint8Array(pdfData.length);
+                    for (let i = 0; i < pdfData.length; i++) bytes[i] = pdfData.charCodeAt(i);
+
+                    const loadingTask = pdfjsLib.getDocument({
+                        data: bytes,
+                        cMapUrl: CMAP_URL,
+                        cMapPacked: true
+                    });
+                    const pdf = await loadingTask.promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 0.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    return canvas.toDataURL('image/jpeg', 0.6);
+                } catch(e) { console.error(e); return ""; }
             }
         };
+
+        // --- GLOBAL EVENTS FOR IDLE TIMER ---
+        ['mousemove', 'touchstart', 'click', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                if (!document.getElementById('viewer').classList.contains('hidden')) {
+                    viewer.resetIdleTimer();
+                }
+            });
+        });
+
+        // --- KEYBOARD SHORTCUTS ---
+        document.addEventListener('keydown', e => {
+            const viewerEl = document.getElementById('viewer');
+            const isViewerOpen = !viewerEl.classList.contains('hidden');
+            if (isViewerOpen) {
+                if (e.key === 'ArrowLeft') viewer.nav(-1);
+                if (e.key === 'ArrowRight') viewer.nav(1);
+                if (e.key === 'Escape') ui.closeViewer();
+            } else {
+                if (e.key === 'Escape') app.lock();
+            }
+        });
 
         // Init
         app.init();
