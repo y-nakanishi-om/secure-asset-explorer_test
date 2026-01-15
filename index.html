@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure Asset Explorer - Lite V6 (Fixed Core)</title>
+    <title>Secure Asset Explorer - Lite V6 (Signage I/O)</title>
     <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -129,23 +129,27 @@
         <div class="fixed bottom-6 left-4 right-4 z-30 flex justify-center pointer-events-none">
             <div class="bottom-toolbar pointer-events-auto px-6 py-3 flex flex-wrap justify-center items-center gap-6 rounded-2xl">
                 
-                <!-- Info Section -->
-                <div class="flex items-center gap-3 border-r border-slate-700 pr-6 hidden sm:flex">
-                    <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-lg">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-xs text-white leading-tight">保管庫 Lite</h2>
-                        <p id="itemCountDisplay" class="text-[10px] text-slate-400 font-mono">0 Items</p>
-                    </div>
-                </div>
-
                 <!-- Main Actions -->
                 <button onclick="document.getElementById('fileInput').click()" class="text-indigo-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     <span class="text-[9px] font-bold">追加</span>
                 </button>
+
+                <div class="w-px h-6 bg-slate-700"></div>
+
+                <!-- I/O Buttons -->
+                <button onclick="document.getElementById('importJsonInput').click()" class="text-emerald-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span class="text-[9px] font-bold">読込</span>
+                </button>
+
+                <button onclick="app.exportBackup()" class="text-sky-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span class="text-[9px] font-bold">書出</span>
+                </button>
                 
+                <div class="w-px h-6 bg-slate-700"></div>
+
                 <button onclick="ui.toggleSelectionMode()" id="selectBtn" class="text-slate-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span class="text-[9px] font-bold">選択</span>
@@ -161,21 +165,16 @@
                 <!-- Divider -->
                 <div class="h-8 w-px bg-slate-700"></div>
 
-                <!-- Search & Lock -->
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800/50 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white outline-none focus:border-indigo-500 w-24 focus:w-40 transition-all">
-                        <svg class="w-4 h-4 text-slate-500 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </div>
-                    <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800/50 rounded-lg hover:bg-slate-700 transition-colors" title="ロック">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </button>
+                <!-- Info -->
+                <div class="hidden sm:block">
+                    <p id="itemCountDisplay" class="text-[10px] text-slate-400 font-mono">0 Items</p>
                 </div>
 
             </div>
         </div>
         
         <input type="file" id="fileInput" multiple accept="image/*,application/pdf" class="hidden" onchange="app.handleUpload(this)">
+        <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="app.handleImport(this)">
     </div>
 
     <!-- Viewer Modal -->
@@ -224,19 +223,14 @@
             document.getElementById('globalLoader').style.display = 'none';
         };
 
-        // --- CRYPTO LOGIC (Restored from Working Version) ---
-        // UIブロックを防ぐために非同期ラップするが、ロジック自体は動いていたコードと全く同じにする
+        // --- CRYPTO LOGIC ---
         const asyncCrypto = async (action, payload, secret, salt = null, iterations = 10000) => {
-            // UIスレッドをブロックしないよう一瞬待つ
             await new Promise(r => setTimeout(r, 10));
-
             try {
                 if (action === 'deriveKey') {
-                    // 重要：動いていたコード同様、WordArrayそのものを返す（.toString()しない）
                     return CryptoJS.PBKDF2(payload, salt, { keySize: 256/32, iterations: iterations });
                 } 
                 else if (action === 'encrypt') {
-                    // secretはWordArrayであることを期待
                     const iv = CryptoJS.lib.WordArray.random(128/8);
                     const encrypted = CryptoJS.AES.encrypt(payload, secret, { iv: iv });
                     return iv.toString() + ":" + encrypted.toString();
@@ -247,7 +241,6 @@
                     const iv = CryptoJS.enc.Hex.parse(parts[0]);
                     const bytes = CryptoJS.AES.decrypt(parts[1], secret, { iv: iv });
                     const str = bytes.toString(CryptoJS.enc.Utf8);
-                    // 空文字チェックなど厳密にしすぎると失敗扱いになる場合があるので緩める
                     if (!str && str !== "") return null; 
                     return str;
                 }
@@ -345,7 +338,6 @@
                 ui.loader(true, "認証処理中...");
                 
                 try {
-                    // UI更新待機
                     await new Promise(r => setTimeout(r, 100));
 
                     const hash = CryptoJS.SHA256(pass).toString();
@@ -362,12 +354,10 @@
                             return;
                         }
 
-                        // Derive key (returns WordArray)
                         const derivedKey = await asyncCrypto('deriveKey', pass, null, config.salt);
-                        // Decrypt challenge
                         const decryptedTest = await asyncCrypto('decrypt', config.challenge, derivedKey);
                         
-                        if (decryptedTest === "OK") { // 元コードは "OK" で判定していたので合わせる
+                        if (decryptedTest === "OK") {
                             state.key = derivedKey;
                             state.userId = hash;
                             app.unlockInterface();
@@ -396,7 +386,6 @@
                     await new Promise(r => setTimeout(r, 100));
 
                     const hash = CryptoJS.SHA256(p1).toString();
-                    // Check existing
                     const txCheck = state.db.transaction(STORES.CONFIG, 'readonly');
                     const reqCheck = txCheck.objectStore(STORES.CONFIG).get("cfg_" + hash);
                     
@@ -408,8 +397,8 @@
                         }
 
                         const salt = CryptoJS.lib.WordArray.random(128/8).toString();
-                        const derivedKey = await asyncCrypto('deriveKey', p1, null, salt); // WordArray
-                        const challenge = await asyncCrypto('encrypt', "OK", derivedKey); // "OK" を暗号化
+                        const derivedKey = await asyncCrypto('deriveKey', p1, null, salt);
+                        const challenge = await asyncCrypto('encrypt', "OK", derivedKey);
 
                         const config = { key: "cfg_" + hash, salt, challenge };
                         
@@ -497,6 +486,92 @@
                     await app.refreshLibrary();
                     ui.loader(false);
                 }
+            },
+
+            exportBackup: async () => {
+                if (state.assets.length === 0) return ui.toast("保存するデータがありません");
+                ui.loader(true, "バックアップ作成中...");
+                try {
+                    const tx = state.db.transaction([STORES.CONFIG, STORES.META, STORES.DATA], 'readonly');
+                    const configKey = "cfg_" + state.userId;
+                    const configReq = tx.objectStore(STORES.CONFIG).get(configKey);
+                    
+                    const config = await new Promise((resolve, reject) => {
+                        configReq.onsuccess = () => resolve(configReq.result);
+                        configReq.onerror = () => reject("Config read failed");
+                    });
+
+                    const assets = [];
+                    for (let meta of state.assets) {
+                        const content = await dbMgr.getContent(meta.id);
+                        if (content) assets.push({ ...meta, data: content });
+                    }
+
+                    const backup = {
+                        version: "v6",
+                        userId: state.userId,
+                        config: config,
+                        assets: assets,
+                        timestamp: Date.now()
+                    };
+
+                    const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vault-backup-${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    ui.toast("バックアップを保存しました");
+                } catch (e) {
+                    console.error(e);
+                    ui.toast("エクスポート失敗");
+                } finally {
+                    ui.loader(false);
+                }
+            },
+
+            handleImport: async (input) => {
+                const file = input.files[0];
+                if (!file) return;
+                
+                ui.loader(true, "バックアップ読込中...");
+                try {
+                    const text = await file.text();
+                    const backup = JSON.parse(text);
+                    
+                    if (!backup.assets || !backup.config) throw new Error("無効なフォーマットです");
+
+                    // Restore Config
+                    const txCfg = state.db.transaction(STORES.CONFIG, 'readwrite');
+                    txCfg.objectStore(STORES.CONFIG).put(backup.config);
+                    await new Promise(r => txCfg.oncomplete = r);
+
+                    // Restore Assets
+                    let count = 0;
+                    const total = backup.assets.length;
+                    
+                    for (let item of backup.assets) {
+                        count++;
+                        ui.updateLoaderMsg(`資産データを復元中... (${count}/${total})`);
+                        // Give UI chance to update
+                        if (count % 5 === 0) await new Promise(r => setTimeout(r, 5));
+                        
+                        const content = item.data;
+                        const meta = { ...item };
+                        delete meta.data;
+                        await dbMgr.saveAsset(meta, content);
+                    }
+
+                    alert("復元が完了しました。\n\n【重要】\nバックアップ作成時のパスワードでログインし直してください。");
+                    location.reload();
+
+                } catch (e) {
+                    console.error(e);
+                    ui.toast("インポート失敗: " + e.message);
+                    ui.loader(false);
+                }
+                input.value = "";
             },
 
             openItem: async (id) => {
