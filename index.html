@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure Asset Explorer - Lite V6 (Signage I/O)</title>
+    <title>Secure Asset Explorer - Lite V6 (Signage I/O Fixed)</title>
     <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -96,9 +96,27 @@
         </div>
     </div>
 
+    <!-- Import Password Modal (New) -->
+    <div id="importAuthModal" class="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center hidden p-6">
+        <div class="w-full max-w-sm space-y-6 text-center bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl">
+            <h2 class="text-xl font-bold text-white">データのインポート</h2>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                取り込むファイルの<span class="text-indigo-400 font-bold">作成時に設定したパスワード</span>を入力してください。<br>
+                認証後、現在のあなたのアカウント用にデータを自動変換して取り込みます。
+            </p>
+            <div class="space-y-4">
+                <input type="password" id="importPass" class="w-full bg-slate-950 border border-slate-700 text-center text-white text-lg rounded-xl py-4 px-4 focus:border-emerald-500 outline-none transition-colors" placeholder="元のパスワード">
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('importAuthModal').classList.add('hidden'); document.getElementById('importJsonInput').value = '';" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-xl text-xs font-bold transition-colors">キャンセル</button>
+                    <button onclick="app.runImportConversion()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl text-xs font-bold shadow-lg transition-colors">変換して取込</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main App -->
     <div id="appInterface" class="flex-1 flex flex-col h-full opacity-0 pointer-events-none transition-opacity duration-300">
-        <!-- Header -->
+        <!-- Header (Simplified) -->
         <header class="solid-panel sticky top-0 z-30 px-4 py-3 flex justify-between items-center h-16">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center">
@@ -106,13 +124,9 @@
                 </div>
                 <div class="leading-tight">
                     <h2 class="font-bold text-sm text-white">保管庫 Lite</h2>
+                    <!-- Fixed: Added ID back to prevent crash -->
                     <p id="itemCount" class="text-[10px] text-slate-400">読み込み中...</p>
                 </div>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                 <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500 w-24 focus:w-32 transition-all">
-                <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg" title="ロック"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></button>
             </div>
         </header>
 
@@ -127,7 +141,7 @@
 
         <!-- Bottom Integrated Toolbar -->
         <div class="fixed bottom-6 left-4 right-4 z-30 flex justify-center pointer-events-none">
-            <div class="bottom-toolbar pointer-events-auto px-6 py-3 flex flex-wrap justify-center items-center gap-6 rounded-2xl">
+            <div class="bottom-toolbar pointer-events-auto px-6 py-3 flex flex-wrap justify-center items-center gap-4 sm:gap-6 rounded-2xl">
                 
                 <!-- Main Actions -->
                 <button onclick="document.getElementById('fileInput').click()" class="text-indigo-400 hover:text-white flex flex-col items-center gap-1 transition-colors">
@@ -162,13 +176,21 @@
                      </button>
                 </div>
 
-                <!-- Divider -->
-                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="w-px h-6 bg-slate-700"></div>
 
-                <!-- Info -->
-                <div class="hidden sm:block">
-                    <p id="itemCountDisplay" class="text-[10px] text-slate-400 font-mono">0 Items</p>
+                <!-- Search & Lock -->
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <svg class="w-3 h-3 text-slate-500 absolute left-2 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="searchInput" oninput="app.filter()" placeholder="検索" class="bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-2 py-1.5 text-[10px] text-white outline-none focus:border-indigo-500 w-20 focus:w-32 transition-all">
+                    </div>
+                    <button onclick="app.lock()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors" title="ロック">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    </button>
                 </div>
+
+                <!-- Hidden Info for logic compatibility -->
+                <p id="itemCountDisplay" class="hidden">0 Items</p>
 
             </div>
         </div>
@@ -223,11 +245,12 @@
             document.getElementById('globalLoader').style.display = 'none';
         };
 
-        // --- CRYPTO LOGIC ---
+        // --- CRYPTO LOGIC (V5 Compatible) ---
         const asyncCrypto = async (action, payload, secret, salt = null, iterations = 10000) => {
             await new Promise(r => setTimeout(r, 10));
             try {
                 if (action === 'deriveKey') {
+                    // FIX: Return WordArray directly (No .toString())
                     return CryptoJS.PBKDF2(payload, salt, { keySize: 256/32, iterations: iterations });
                 } 
                 else if (action === 'encrypt') {
@@ -254,6 +277,7 @@
         const DB_NAME = "Vault_Pro_v6";
         const STORES = { META: 'assets_meta', DATA: 'assets_content', CONFIG: 'config' };
         
+        // Globals
         const state = {
             db: null,
             key: null,
@@ -262,6 +286,8 @@
             selected: new Set(),
             isSelectionMode: false
         };
+        
+        let pendingImportData = null; // Store loaded JSON temporarily
 
         // --- DATABASE ---
         const dbMgr = {
@@ -535,43 +561,92 @@
                 const file = input.files[0];
                 if (!file) return;
                 
-                ui.loader(true, "バックアップ読込中...");
+                ui.loader(true, "バックアップ解析中...");
                 try {
                     const text = await file.text();
-                    const backup = JSON.parse(text);
+                    pendingImportData = JSON.parse(text);
                     
-                    if (!backup.assets || !backup.config) throw new Error("無効なフォーマットです");
+                    if (!pendingImportData.assets || !pendingImportData.config) throw new Error("形式エラー");
 
-                    // Restore Config
-                    const txCfg = state.db.transaction(STORES.CONFIG, 'readwrite');
-                    txCfg.objectStore(STORES.CONFIG).put(backup.config);
-                    await new Promise(r => txCfg.oncomplete = r);
-
-                    // Restore Assets
-                    let count = 0;
-                    const total = backup.assets.length;
-                    
-                    for (let item of backup.assets) {
-                        count++;
-                        ui.updateLoaderMsg(`資産データを復元中... (${count}/${total})`);
-                        // Give UI chance to update
-                        if (count % 5 === 0) await new Promise(r => setTimeout(r, 5));
-                        
-                        const content = item.data;
-                        const meta = { ...item };
-                        delete meta.data;
-                        await dbMgr.saveAsset(meta, content);
-                    }
-
-                    alert("復元が完了しました。\n\n【重要】\nバックアップ作成時のパスワードでログインし直してください。");
-                    location.reload();
+                    // Show Auth Modal for Import
+                    ui.loader(false);
+                    document.getElementById('importAuthModal').classList.remove('hidden');
+                    document.getElementById('importPass').value = '';
+                    document.getElementById('importPass').focus();
 
                 } catch (e) {
                     console.error(e);
-                    ui.toast("インポート失敗: " + e.message);
+                    ui.toast("読込失敗: " + e.message);
+                    ui.loader(false);
+                    input.value = "";
+                }
+            },
+
+            runImportConversion: async () => {
+                const pass = document.getElementById('importPass').value;
+                if (!pass) return alert("パスワードを入力してください");
+
+                ui.loader(true, "データ変換中...");
+                document.getElementById('importAuthModal').classList.add('hidden');
+
+                try {
+                    // 1. Derive OLD key from entered password
+                    const oldConfig = pendingImportData.config;
+                    const oldKey = await asyncCrypto('deriveKey', pass, null, oldConfig.salt);
+                    
+                    // 2. Verify password with challenge
+                    const check = await asyncCrypto('decrypt', oldConfig.challenge, oldKey);
+                    if (check !== "OK") throw new Error("パスワードが間違っています");
+
+                    // 3. Conversion Loop
+                    let count = 0;
+                    const total = pendingImportData.assets.length;
+
+                    for (let item of pendingImportData.assets) {
+                        count++;
+                        ui.updateLoaderMsg(`データ変換中... (${count}/${total})`);
+                        if(count % 5 === 0) await new Promise(r => setTimeout(r, 5));
+
+                        // Decrypt with OLD key
+                        const plainName = await asyncCrypto('decrypt', item.name, oldKey);
+                        const plainType = await asyncCrypto('decrypt', item.type, oldKey);
+                        const plainThumb = await asyncCrypto('decrypt', item.thumbnail, oldKey);
+                        const plainData = await asyncCrypto('decrypt', item.data, oldKey); // data comes from export
+
+                        if (!plainData) continue; // skip broken items
+
+                        // Encrypt with NEW (Current) key
+                        const newName = await asyncCrypto('encrypt', plainName, state.key);
+                        const newType = await asyncCrypto('encrypt', plainType, state.key);
+                        const newThumb = await asyncCrypto('encrypt', plainThumb, state.key);
+                        const newData = await asyncCrypto('encrypt', plainData, state.key);
+
+                        // Save as new asset
+                        const newId = crypto.randomUUID();
+                        const newMeta = {
+                            id: newId,
+                            ownerId: state.userId,
+                            name: newName,
+                            type: newType,
+                            thumbnail: newThumb,
+                            timestamp: Date.now(), // timestamp could be preserved or new
+                            size: item.size
+                        };
+
+                        await dbMgr.saveAsset(newMeta, newData);
+                    }
+
+                    alert(`インポート完了！\n${count}件のデータをあなたの保管庫に追加しました。`);
+                    pendingImportData = null;
+                    document.getElementById('importJsonInput').value = "";
+                    await app.refreshLibrary();
+
+                } catch (e) {
+                    console.error(e);
+                    alert("インポート失敗: " + e.message);
+                } finally {
                     ui.loader(false);
                 }
-                input.value = "";
             },
 
             openItem: async (id) => {
@@ -624,7 +699,8 @@
                 const q = document.getElementById('searchInput').value.toLowerCase();
                 const grid = document.getElementById('gridContainer');
                 for (let card of grid.children) {
-                    const name = card.dataset.name.toLowerCase();
+                    // Fix: Handle undefined dataset safely
+                    const name = (card.dataset.name || "").toLowerCase();
                     card.style.display = name.includes(q) ? 'block' : 'none';
                 }
             }
@@ -661,16 +737,21 @@
                 const grid = document.getElementById('gridContainer');
                 grid.innerHTML = '';
                 
+                // Fix: Safely update counts only if elements exist
+                const updateCounts = (txt) => {
+                    const el1 = document.getElementById('itemCount');
+                    const el2 = document.getElementById('itemCountDisplay');
+                    if(el1) el1.textContent = txt;
+                    if(el2) el2.textContent = txt;
+                };
+
                 if (state.assets.length === 0) {
                     document.getElementById('emptyState').classList.remove('hidden');
-                    document.getElementById('itemCount').textContent = "0 Items";
-                    document.getElementById('itemCountDisplay').textContent = "0 Items";
+                    updateCounts("0 Items");
                     return;
                 }
                 document.getElementById('emptyState').classList.add('hidden');
-                const countText = `${state.assets.length} Items`;
-                document.getElementById('itemCount').textContent = countText;
-                document.getElementById('itemCountDisplay').textContent = countText;
+                updateCounts(`${state.assets.length} Items`);
 
                 for (let i = 0; i < state.assets.length; i++) {
                     const item = state.assets[i];
