@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure Asset Explorer - Lite V6 (Signage I/O Fixed)</title>
+    <title>Secure Asset Explorer - Lite V6 (Signage I/O Fixed 2)</title>
     <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -102,13 +102,13 @@
             <h2 class="text-xl font-bold text-white">データのインポート</h2>
             <p class="text-xs text-slate-400 leading-relaxed">
                 取り込むファイルの<span class="text-indigo-400 font-bold">作成時に設定したパスワード</span>を入力してください。<br>
-                認証後、現在のあなたのアカウント用にデータを自動変換して取り込みます。
+                <span class="text-red-400 font-bold">注意: 現在のデータは全て上書き消去されます。</span>
             </p>
             <div class="space-y-4">
                 <input type="password" id="importPass" class="w-full bg-slate-950 border border-slate-700 text-center text-white text-lg rounded-xl py-4 px-4 focus:border-emerald-500 outline-none transition-colors" placeholder="元のパスワード">
                 <div class="flex gap-3">
                     <button onclick="document.getElementById('importAuthModal').classList.add('hidden'); document.getElementById('importJsonInput').value = '';" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-xl text-xs font-bold transition-colors">キャンセル</button>
-                    <button onclick="app.runImportConversion()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl text-xs font-bold shadow-lg transition-colors">変換して取込</button>
+                    <button onclick="app.runImportConversion()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl text-xs font-bold shadow-lg transition-colors">上書きインポート</button>
                 </div>
             </div>
         </div>
@@ -341,6 +341,28 @@
                 tx.objectStore(STORES.META).delete(id);
                 tx.objectStore(STORES.DATA).delete(id);
                 return new Promise(r => tx.oncomplete = r);
+            },
+            deleteAllForUser: async (userId) => {
+                const tx = state.db.transaction([STORES.META, STORES.DATA], 'readwrite');
+                const index = tx.objectStore(STORES.META).index('ownerId');
+                
+                // Get all assets for this user first
+                const req = index.getAllKeys(userId);
+                
+                return new Promise((resolve, reject) => {
+                    req.onsuccess = () => {
+                        const ids = req.result;
+                        const metaStore = tx.objectStore(STORES.META);
+                        const dataStore = tx.objectStore(STORES.DATA);
+                        
+                        ids.forEach(id => {
+                            metaStore.delete(id);
+                            dataStore.delete(id);
+                        });
+                    };
+                    tx.oncomplete = resolve;
+                    tx.onerror = reject;
+                });
             }
         };
 
@@ -583,11 +605,11 @@
             },
 
             runImportConversion: async () => {
-                const pass = document.getElementById('importPass').value;
+                const passInput = document.getElementById('importPass');
+                const pass = passInput.value;
                 if (!pass) return alert("パスワードを入力してください");
 
-                ui.loader(true, "データ変換中...");
-                document.getElementById('importAuthModal').classList.add('hidden');
+                ui.loader(true, "認証中...");
 
                 try {
                     // 1. Derive OLD key from entered password
@@ -596,7 +618,32 @@
                     
                     // 2. Verify password with challenge
                     const check = await asyncCrypto('decrypt', oldConfig.challenge, oldKey);
-                    if (check !== "OK") throw new Error("パスワードが間違っています");
+                    
+                    if (check !== "OK") {
+                        ui.loader(false);
+                        ui.toast("パスワードが間違っています");
+                        passInput.value = "";
+                        passInput.focus();
+                        passInput.classList.add('shake');
+                        setTimeout(() => passInput.classList.remove('shake'), 400);
+                        return; // Keep modal open
+                    }
+
+                    // Auth success, close modal
+                    document.getElementById('importAuthModal').classList.add('hidden');
+                    
+                    // Clear Loader temporarily for confirm dialog
+                    ui.loader(false);
+
+                    // **重要: 確認後に既存データを全削除**
+                    if (!confirm("【最終確認】\n現在の保管庫にある全てのデータが消去され、インポートした内容で上書きされます。\n\nよろしいですか？")) {
+                        pendingImportData = null;
+                        document.getElementById('importJsonInput').value = "";
+                        return; 
+                    }
+                    
+                    ui.loader(true, "データ変換中...");
+                    await dbMgr.deleteAllForUser(state.userId);
 
                     // 3. Conversion Loop
                     let count = 0;
@@ -636,7 +683,7 @@
                         await dbMgr.saveAsset(newMeta, newData);
                     }
 
-                    alert(`インポート完了！\n${count}件のデータをあなたの保管庫に追加しました。`);
+                    alert(`インポート完了！\n${count}件のデータを上書き保存しました。`);
                     pendingImportData = null;
                     document.getElementById('importJsonInput').value = "";
                     await app.refreshLibrary();
